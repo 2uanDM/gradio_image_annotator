@@ -1,33 +1,33 @@
 <script lang="ts">
-	import { BaseColorPicker } from "@gradio/colorpicker";
+    import { BaseColorPicker } from "@gradio/colorpicker";
     import { BaseButton } from "@gradio/button";
-    import { BaseDropdown } from "./patched_dropdown/Index.svelte";
-	import { createEventDispatcher } from "svelte";
+    import { BaseDropdown } from "../../patched_dropdown/Index.svelte";
+    import { createEventDispatcher } from "svelte";
     import { onMount, onDestroy } from "svelte";
 
     export let label = "";
     export let currentLabel = "";
-    export let choices = [];  // [(label, i)]
-    export let choicesColors = [];
+    export let choices: string[] = []; // [(label, i)]
+    export let choicesColors: string[] = [];
     export let color = "";
     export let currentColor = "";
     export let showRemove = true;
-    
+
     const dispatch = createEventDispatcher<{
-		change: object;
-	}>();
+        change: object;
+    }>();
 
     function dispatchChange(ret: number) {
         dispatch("change", {
             label: currentLabel,
             color: currentColor,
-            ret: ret // -1: remove, 0: cancel, 1: change
+            ret: ret, // -1: remove, 0: cancel, 1: change
         });
     }
 
     function onDropDownChange(event) {
         const { detail } = event;
-		let choice = detail;
+        let choice = detail;
 
         if (Number.isInteger(choice)) {
             if (Array.isArray(choicesColors) && choice < choicesColors.length) {
@@ -43,7 +43,7 @@
 
     function onColorChange(event) {
         const { detail } = event;
-		currentColor = detail;
+        currentColor = detail;
     }
 
     function onDropDownEnter(event) {
@@ -52,23 +52,22 @@
     }
 
     function handleKeyPress(event: KeyboardEvent) {
-		switch (event.key) {
-			case "Enter":
+        switch (event.key) {
+            case "Enter":
                 dispatchChange(1);
-				break;
-		}
-	}
+                break;
+        }
+    }
 
-	onMount(() => {
-		document.addEventListener("keydown", handleKeyPress);
+    onMount(() => {
+        document.addEventListener("keydown", handleKeyPress);
         currentLabel = label;
         currentColor = color;
-	});
-    
-	onDestroy(() => {
-        document.removeEventListener("keydown", handleKeyPress);
-  	});
+    });
 
+    onDestroy(() => {
+        document.removeEventListener("keydown", handleKeyPress);
+    });
 </script>
 
 <div class="modal" id="model-box-edit">
@@ -94,23 +93,22 @@
                 />
             </div>
             <div style="margin-right: 8px;">
-                <BaseButton
-                on:click={() => dispatchChange(0)}
-                >Cancel</BaseButton>
+                <BaseButton on:click={() => dispatchChange(0)}
+                    >Cancel</BaseButton
+                >
             </div>
             {#if showRemove}
                 <div style="margin-right: 8px;">
                     <BaseButton
                         variant="stop"
-                        on:click={() => dispatchChange(-1)}
-                    >Remove</BaseButton>
+                        on:click={() => dispatchChange(-1)}>Remove</BaseButton
+                    >
                 </div>
             {/if}
             <div>
-                <BaseButton
-                    variant="primary"
-                    on:click={() => dispatchChange(1)}
-                >OK</BaseButton>
+                <BaseButton variant="primary" on:click={() => dispatchChange(1)}
+                    >OK</BaseButton
+                >
             </div>
         </span>
     </div>

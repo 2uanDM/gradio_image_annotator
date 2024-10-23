@@ -1,3 +1,5 @@
+import { BoxProperty } from "../../utils/constants";
+
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max)
 
 
@@ -62,13 +64,13 @@ export default class Box {
         ymin: number,
         xmax: number,
         ymax: number,
-        color: string = "rgb(255, 255, 255)",
-        alpha: number = 0.5,
-        minSize: number = 25,
-        handleSize: number = 8,
-        thickness: number = 2,
-        selectedThickness: number = 4,
-        scaleFactor: number = 1,
+        color: string  = "rgb(255, 255, 255)",
+        alpha: BoxProperty = BoxProperty.Alpha,
+        minSize: BoxProperty = BoxProperty.MinSize,
+        handleSize: BoxProperty = BoxProperty.HandleSize,
+        thickness: BoxProperty = BoxProperty.Thickness,
+        selectedThickness: BoxProperty = BoxProperty.SelectedThickness,
+        scaleFactor: BoxProperty = BoxProperty.ScaleFactor,
     ) {
         this.renderCallBack = renderCallBack;
         this.onFinishCreation = onFinishCreation;
@@ -244,9 +246,9 @@ export default class Box {
         // Render the label and background
         if (this.label !== null && this.label.trim() !== ""){
             if (this.isSelected) {
-                ctx.font = "bold 14px Arial";
+                ctx.font = BoxProperty.FrontSelected
             } else {
-                ctx.font = "12px Arial";
+                ctx.font = BoxProperty.FontNormal;
             }
             const labelWidth = ctx.measureText(this.label).width + 10;
             const labelHeight = 20;
