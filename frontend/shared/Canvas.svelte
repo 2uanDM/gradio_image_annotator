@@ -564,7 +564,7 @@
         align-items: center;
         justify-content: center;
         border-top: 1px solid var(--border-color-primary);
-        width: 95%;
+        width: 100%;
         bottom: 0;
         left: 0;
         right: 0;
@@ -574,8 +574,8 @@
     }
 
     .icon {
-        width: 22px;
-        height: 22px;
+        width: 30px;
+        height: 30px;
         margin: var(--spacing-lg) var(--spacing-xs);
         padding: var(--spacing-xs);
         color: var(--neutral-400);

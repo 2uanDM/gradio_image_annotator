@@ -76,7 +76,7 @@ def get_boxes_json(annotations):
     return annotations["boxes"]
 
 
-with gr.Blocks(js=JS_LIGHT_THEME) as demo:
+with gr.Blocks(js=JS_LIGHT_THEME, theme=gr.themes.Soft(primary_hue="slate")) as demo:
     annotator = image_annotator(
         example_annotation,
         label_list=["Person", "Vehicle"],
