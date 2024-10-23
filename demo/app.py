@@ -69,17 +69,21 @@ with gr.Blocks(
     gr.Markdown("---")
 
     gr.Markdown("#### Step 1: Upload an image")
-    with gr.Row(variant="compact"):
-        folder_of_images = gr.UploadButton(
-            elem_classes=["gradio-upload-button"],
-            label="Choose a folder",
-            file_count="directory",
-        )
-        selected_folder = gr.Textbox(
-            label="Selected folder",
-            value="",
-            interactive=False,
-        )
+
+    selected_folder = gr.Textbox(
+        label="Selected folder",
+        value="",
+        lines=10,
+        interactive=False,
+    )
+
+    folder_of_images = gr.UploadButton(
+        elem_classes=["gradio-upload-button"],
+        label="Choose a folder",
+        file_count="directory",
+    )
+
+    gr.Markdown("---")
 
     annotator = image_annotator(
         example_annotation,
