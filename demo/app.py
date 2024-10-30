@@ -1,5 +1,11 @@
+import os
+from typing import List
+
 import gradio as gr
 from gradio_image_annotation import image_annotator
+
+## GLOBALS VARIABLES ##
+current_loaded_images = {}
 
 JS_LIGHT_THEME = """
 function refresh() {
@@ -13,9 +19,10 @@ function refresh() {
 """
 
 CSS = """
-.gradio-upload-button {
+#gradio-upload-button {
     height: 3rem !important;
     border-radius: 0.5rem !important;
+    margin-top: 1rem !important;
 }
 """
 
@@ -56,8 +63,24 @@ def get_boxes_json(annotations):
     return annotations["boxes"]
 
 
-def handle_folder_selection(folder):
-    print(folder)
+def handle_folder_selection(list_files: List[str] | None):
+    print(f"==>> list_files: {list_files}")
+    global current_loaded_images
+
+    if list_files is None:
+        return []
+
+    # Empty the current loaded images
+    current_loaded_images = {}
+
+    for file_path in list_files:
+        if file_path.endswith(".png") or file_path.endswith(".jpg"):
+            base_name = os.path.basename(file_path)
+            current_loaded_images[base_name] = file_path
+
+    file_names = list(current_loaded_images.keys())
+
+    return gr.update(choices=file_names, value=file_names[0])
 
 
 with gr.Blocks(
@@ -70,18 +93,19 @@ with gr.Blocks(
 
     gr.Markdown("#### Step 1: Upload an image")
 
-    selected_folder = gr.Textbox(
-        label="Selected folder",
-        value="",
-        lines=10,
-        interactive=False,
-    )
+    with gr.Row(variant="panel", equal_height=True) as row:
+        dropdown = gr.Dropdown(
+            label="Choose an image",
+            allow_custom_value=True,
+            interactive=True,
+        )
 
-    folder_of_images = gr.UploadButton(
-        elem_classes=["gradio-upload-button"],
-        label="Choose a folder",
-        file_count="directory",
-    )
+        folder_of_images_btn = gr.UploadButton(
+            elem_id="gradio-upload-button",
+            variant="primary",
+            label="Choose a folder",
+            file_count="directory",
+        )
 
     gr.Markdown("---")
 
@@ -97,9 +121,10 @@ with gr.Blocks(
     button_get.click(get_boxes_json, annotator, json_boxes)
 
     # Register event handler for folder selection
-    folder_of_images.click(
+    folder_of_images_btn.upload(
         handle_folder_selection,
-        inputs=[folder_of_images],
+        inputs=[folder_of_images_btn],
+        outputs=[dropdown],
     )
 
 
