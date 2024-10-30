@@ -6,6 +6,7 @@ from gradio_image_annotation import image_annotator
 
 ## GLOBALS VARIABLES ##
 current_loaded_images = {}
+calibration_options = {}
 
 JS_LIGHT_THEME = """
 function refresh() {
@@ -20,7 +21,7 @@ function refresh() {
 
 CSS = """
 #gradio-upload-button {
-    height: 3rem !important;
+    height: 2.5rem !important;
     border-radius: 0.5rem !important;
     margin-top: 1rem !important;
 }
@@ -64,7 +65,6 @@ def get_boxes_json(annotations):
 
 
 def handle_folder_selection(list_files: List[str] | None):
-    print(f"==>> list_files: {list_files}")
     global current_loaded_images
 
     if list_files is None:
@@ -93,39 +93,41 @@ with gr.Blocks(
 
     gr.Markdown("#### Step 1: Upload an image")
 
-    with gr.Row(variant="panel", equal_height=True) as row:
-        dropdown = gr.Dropdown(
-            label="Choose an image",
-            allow_custom_value=True,
-            interactive=True,
-        )
+    with gr.Row(equal_height=True) as row:
+        with gr.Column(scale=30, variant="panel") as row:
+            dropdown = gr.Dropdown(
+                label="Choose an image",
+                allow_custom_value=True,
+                interactive=True,
+            )
 
-        folder_of_images_btn = gr.UploadButton(
-            elem_id="gradio-upload-button",
-            variant="primary",
-            label="Choose a folder",
-            file_count="directory",
-        )
+            folder_of_images_btn = gr.UploadButton(
+                elem_id="gradio-upload-button",
+                variant="primary",
+                label="Choose a folder",
+                file_count="directory",
+            )
 
-    gr.Markdown("---")
+        with gr.Column(scale=70, variant="panel") as row:
+            gr.Markdown("#### Step 2: Annotate the image")
 
-    annotator = image_annotator(
-        example_annotation,
-        label_list=["Person", "Vehicle"],
-        label_colors=[(0, 255, 0), (255, 0, 0)],
-    )
+            annotator = image_annotator(
+                example_annotation,
+                label_list=["Person", "Vehicle"],
+                label_colors=[(0, 255, 0), (255, 0, 0)],
+            )
 
-    button_get = gr.Button("Get bounding boxes")
+            button_get = gr.Button("Get bounding boxes")
 
-    json_boxes = gr.JSON()
-    button_get.click(get_boxes_json, annotator, json_boxes)
+            json_boxes = gr.JSON()
+            button_get.click(get_boxes_json, annotator, json_boxes)
 
-    # Register event handler for folder selection
-    folder_of_images_btn.upload(
-        handle_folder_selection,
-        inputs=[folder_of_images_btn],
-        outputs=[dropdown],
-    )
+            # Register event handler for folder selection
+            folder_of_images_btn.upload(
+                handle_folder_selection,
+                inputs=[folder_of_images_btn],
+                outputs=[dropdown],
+            )
 
 
 if __name__ == "__main__":
