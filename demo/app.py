@@ -25,6 +25,10 @@ CSS = """
     border-radius: 0.5rem !important;
     margin-top: 1rem !important;
 }
+
+#show-hide-settings > label {  
+    font-size: 1.1 rem !important;
+}
 """
 
 
@@ -64,7 +68,14 @@ def get_boxes_json(annotations):
     return annotations["boxes"]
 
 
-def handle_folder_selection(list_files: List[str] | None):
+def _show_hide_setting(setting_state):
+    status = not setting_state
+    btn_label = "Show Setting" if setting_state else "Hide Setting"
+
+    return gr.update(visible=status), btn_label, status
+
+
+def _folder_selection(list_files: List[str] | None):
     global current_loaded_images
 
     if list_files is None:
@@ -91,10 +102,10 @@ with gr.Blocks(
     gr.Markdown("# Image Annotation")
     gr.Markdown("---")
 
-    gr.Markdown("#### Step 1: Upload an image")
-
     with gr.Row(equal_height=True) as row:
-        with gr.Column(scale=30, variant="panel") as row:
+        setting_state = gr.State(value=True)
+        with gr.Column(scale=30, variant="panel", visible=setting_state) as setting_col:
+            gr.Markdown("#### Step 1: Upload an image")
             dropdown = gr.Dropdown(
                 label="Choose an image",
                 allow_custom_value=True,
@@ -108,7 +119,12 @@ with gr.Blocks(
                 file_count="directory",
             )
 
-        with gr.Column(scale=70, variant="panel") as row:
+            gr.Markdown("---")
+            gr.Markdown("#### Output JSON")
+
+            json_boxes = gr.JSON()
+
+        with gr.Column(scale=70, variant="panel") as annotatate_col:
             gr.Markdown("#### Step 2: Annotate the image")
 
             annotator = image_annotator(
@@ -117,16 +133,48 @@ with gr.Blocks(
                 label_colors=[(0, 255, 0), (255, 0, 0)],
             )
 
-            button_get = gr.Button("Get bounding boxes")
+            with gr.Row(variant="panel"):
+                prev_button = gr.Button(
+                    value="< Prev",
+                    variant="primary",
+                )
+                with gr.Column(scale=80):
+                    pass
 
-            json_boxes = gr.JSON()
-            button_get.click(get_boxes_json, annotator, json_boxes)
+                next_button = gr.Button(
+                    value="Next >",
+                    variant="primary",
+                )
+
+            with gr.Row(variant="panel"):
+                show_hide_setting_btn = gr.Button(
+                    value="Show Setting" if not setting_state else "Hide Setting",
+                    variant="stop",
+                )
+
+                get_coor_btn = gr.Button(
+                    "Get bounding boxes",
+                    variant="primary",
+                )
 
             # Register event handler for folder selection
+
             folder_of_images_btn.upload(
-                handle_folder_selection,
+                _folder_selection,
                 inputs=[folder_of_images_btn],
                 outputs=[dropdown],
+            )
+
+            get_coor_btn.click(
+                get_boxes_json,
+                annotator,
+                json_boxes,
+            )
+
+            show_hide_setting_btn.click(
+                fn=_show_hide_setting,
+                inputs=[setting_state],
+                outputs=[setting_col, show_hide_setting_btn, setting_state],
             )
 
 
