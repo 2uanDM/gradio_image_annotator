@@ -11,12 +11,13 @@
     import type { LoadingStatus } from "@gradio/statustracker";
     import { AnnotatedImageData } from "./shared/components/ts";
     import ImageAnnotator from "./shared/components/svelte/image-annotator.svelte";
+    // import { ListAnnotatedImageData } from "./shared/components/ts";
 
     // Required props of Gradio
     export let elem_id = "";
     export let elem_classes: string[] = [];
     export let visible = true;
-    export let value: null | AnnotatedImageData[] = null;
+    export let value: null | AnnotatedImageData = null;
     export let label: string;
     export let show_label: boolean;
     export let height: number | undefined;
@@ -27,6 +28,8 @@
     export let min_width: number | undefined = undefined;
     export let loading_status: LoadingStatus;
     export let interactive: boolean;
+
+    export let calibration_ratio: number;
 
     export let label_list: string[];
     export let label_colors: string[];
@@ -77,7 +80,8 @@
     />
 
     <ImageAnnotator
-        bind:value
+        bind:value={value}
+        bind:calibration_ratio
         on:change={() => gradio.dispatch("change")}
         selectable={_selectable}
         {interactive}

@@ -3,79 +3,26 @@ from typing import List
 
 import gradio as gr
 from gradio_image_annotation import image_annotator
+from gradio_image_annotation.constants import CSS, EXAMPLE_DATA, JS_SCRIPT
+from gradio_image_annotation.utils import prepare_annotate_data
 
 ## GLOBALS VARIABLES ##
 current_loaded_images = {}
 calibration_options = {}
-
-JS_LIGHT_THEME = """
-function refresh() {
-    const url = new URL(window.location);
-
-    if (url.searchParams.get('__theme') !== 'light') {
-        url.searchParams.set('__theme', 'light');
-        window.location.href = url.href;
-    }
-}
-"""
-
-CSS = """
-#gradio-upload-button {
-    height: 2.5rem !important;
-    border-radius: 0.5rem !important;
-    margin-top: 1rem !important;
-}
-
-#show-hide-settings > label {  
-    font-size: 1.1 rem !important;
-}
-"""
-
-
-example_annotation = {
-    "image": "https://gradio-builds.s3.amazonaws.com/demo-files/base.png",
-    "boxes": [
-        {
-            "xmin": 636,
-            "ymin": 575,
-            "xmax": 801,
-            "ymax": 697,
-            "label": "Vehicle",
-            "color": (255, 0, 0),
-        },
-        {
-            "xmin": 360,
-            "ymin": 615,
-            "xmax": 386,
-            "ymax": 702,
-            "label": "Person",
-            "color": (0, 255, 0),
-        },
-    ],
-}
-
-
-def crop(annotations):
-    if annotations["boxes"]:
-        box = annotations["boxes"][0]
-        return annotations["image"][
-            box["ymin"] : box["ymax"], box["xmin"] : box["xmax"]
-        ]
-    return None
 
 
 def get_boxes_json(annotations):
     return annotations["boxes"]
 
 
-def _show_hide_setting(setting_state):
+def _show_hide_setting_tab(setting_state):
     status = not setting_state
     btn_label = "Show Setting" if setting_state else "Hide Setting"
 
     return gr.update(visible=status), btn_label, status
 
 
-def _folder_selection(list_files: List[str] | None):
+def _handle_folder_selection(list_files: List[str] | None):
     global current_loaded_images
 
     if list_files is None:
@@ -89,17 +36,28 @@ def _folder_selection(list_files: List[str] | None):
             base_name = os.path.basename(file_path)
             current_loaded_images[base_name] = file_path
 
+    print(f"🚀 Current loaded image: {current_loaded_images}")
+
     file_names = list(current_loaded_images.keys())
 
-    return gr.update(choices=file_names, value=file_names[0])
+    return gr.update(choices=file_names, value=file_names[0]), gr.update(
+        value=prepare_annotate_data(
+            current_loaded_images[file_names[0]],
+        )
+    )
 
 
 with gr.Blocks(
-    js=JS_LIGHT_THEME,
+    js=JS_SCRIPT,
     theme=gr.themes.Soft(primary_hue="slate"),
     css=CSS,
+    fill_height=True,
+    fill_width=True,
 ) as demo:
     gr.Markdown("# Image Annotation")
+    gr.Markdown(
+        "**Note**: Zoom by `Ctrl + Mouse Wheel` is locked, please do that with `Ctrl + =` or `Ctrl + -`"
+    )
     gr.Markdown("---")
 
     with gr.Row(equal_height=True) as row:
@@ -128,9 +86,13 @@ with gr.Blocks(
             gr.Markdown("#### Step 2: Annotate the image")
 
             annotator = image_annotator(
-                example_annotation,
+                value=prepare_annotate_data(current_loaded_images[dropdown.value])
+                if current_loaded_images
+                else EXAMPLE_DATA,
+                boxes_alpha=0.1,
                 label_list=["Person", "Vehicle"],
                 label_colors=[(0, 255, 0), (255, 0, 0)],
+                box_thickness=0.1,
             )
 
             with gr.Row(variant="panel"):
@@ -138,8 +100,11 @@ with gr.Blocks(
                     value="< Prev",
                     variant="primary",
                 )
-                with gr.Column(scale=80):
-                    pass
+
+                calibrate_button = gr.Button(
+                    value="Start Calibrate",
+                    variant="stop",
+                )
 
                 next_button = gr.Button(
                     value="Next >",
@@ -160,9 +125,9 @@ with gr.Blocks(
             # Register event handler for folder selection
 
             folder_of_images_btn.upload(
-                _folder_selection,
+                _handle_folder_selection,
                 inputs=[folder_of_images_btn],
-                outputs=[dropdown],
+                outputs=[dropdown, annotator],
             )
 
             get_coor_btn.click(
@@ -172,7 +137,7 @@ with gr.Blocks(
             )
 
             show_hide_setting_btn.click(
-                fn=_show_hide_setting,
+                fn=_show_hide_setting_tab,
                 inputs=[setting_state],
                 outputs=[setting_col, show_hide_setting_btn, setting_state],
             )

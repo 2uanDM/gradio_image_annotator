@@ -1,20 +1,21 @@
 <script lang="ts">
-    import { onMount, onDestroy, createEventDispatcher } from "svelte";
-    import { BoundingBox, Hand, Calibrate } from "../../assets/icons/index";
+    import { createEventDispatcher, onDestroy, onMount } from "svelte";
+    import { BoundingBox, Calibrate, Hand } from "../../assets/icons/index";
+    import { colorHexToRGB, colorRGBAToHex } from "../../utils/colors";
+    import { BoxProperty, Colors } from "../../utils/constants";
+    import { Mode } from "../../utils/enums";
+    import { AnnotatedImageData, Box } from "../ts";
     import ModalBox from "./modal-box.svelte";
-    import Box from "../ts/box.js";
-    import AnnotatedImageData from "../ts/annotated-image-data.js";
-    import { Mode } from "../../utils/enums.js";
-    import { Previous, Next } from "../../assets/icons/index.js";
-    import { BoxProperty, Colors } from "../../utils/constants.js";
-    import { colorHexToRGB, colorRGBAToHex } from "../../utils/colors.js";
 
-    export let value: null | AnnotatedImageData[];
-    export let currentImageIndex: number;
+    export let value: AnnotatedImageData | null;
     export let imageUrl: string | null = null;
+
+    export let calibration_ratio: number;
+
     export let interactive: boolean;
-    export let boxAlpha = BoxProperty.Alpha;
-    export let boxMinSize = BoxProperty.MinSize;
+
+    export let boxAlpha: number = BoxProperty.Alpha; // Transparency of boxes
+    export let boxMinSize: number = BoxProperty.MinSize;
     export let handleSize: number;
     export let boxThickness: number;
     export let boxSelectedThickness: number;
@@ -25,18 +26,18 @@
     export let handlesCursor: boolean = true;
 
     let canvas: HTMLCanvasElement;
-    let ctx: CanvasRenderingContext2D | null;
-    let image: HTMLImageElement | null = null;
+    let ctx: CanvasRenderingContext2D | null; // to draw on the canvas
+    let image: HTMLImageElement | null = null; // Image to be displayed on the canvas
     let selectedBox = -1; // Index of the selected box
     let mode: Mode = Mode.Drag; // Default mode for the canvas
 
     // If current image has no boxes, set mode to creation
-    if (value !== null && value[currentImageIndex].boxes.length == 0) {
+    if (value !== null && value.boxes.length == 0) {
         mode = Mode.Creation;
     }
 
-    let canvasXmin = 0;
-    let canvasYmin = 0;
+    let canvasXmin = 0; // Min x coordinate of the canvas, starting from the left
+    let canvasYmin = 0; // Min y coordinate of the canvas, starting from the top
     let canvasXmax = 0;
     let canvasYmax = 0;
     let scaleFactor = 1.0;
@@ -47,12 +48,27 @@
     let editModalVisible = false;
     let newModalVisible = false;
 
+    let showPanel = false;
+    let mouseX = 0;
+    let mouseY = 0;
+
     const dispatch = createEventDispatcher<{
         change: undefined;
     }>();
 
+    function handleMouseMove(event: MouseEvent) {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = event.clientX - rect.left;
+        mouseY = event.clientY - rect.top;
+        showPanel = true
+    }
+
+    function handleMouseLeave(event: MouseEvent) {
+        // showPanel = false;
+    }
+    
     /**
-     * Draw the image and the boxes on the canvas
+     * Update the UI
      */
     function draw() {
         if (ctx) {
@@ -67,7 +83,7 @@
                 );
             }
             if (value !== null) {
-                for (const box of value[currentImageIndex].boxes
+                for (const box of value.boxes
                     .slice()
                     .reverse()) {
                     box.render(ctx);
@@ -82,11 +98,11 @@
         }
 
         selectedBox = index;
-        value[currentImageIndex].boxes.forEach((box) => {
+        value.boxes.forEach((box) => {
             box.setSelected(false);
         });
-        if (index >= 0 && index < value[currentImageIndex].boxes.length) {
-            value[currentImageIndex].boxes[index].setSelected(true);
+        if (index >= 0 && index < value.boxes.length) {
+            value.boxes[index].setSelected(true);
         }
         draw();
     }
@@ -101,7 +117,7 @@
         const mouseY = event.clientY - rect.top;
 
         // Check if the mouse is over any of the resizing handles
-        for (const [i, box] of value[currentImageIndex].boxes.entries()) {
+        for (const [i, box] of value.boxes.entries()) {
             const handleIndex = box.indexOfPointInsideHandle(mouseX, mouseY);
             if (handleIndex >= 0) {
                 selectBox(i);
@@ -111,7 +127,7 @@
         }
 
         // Check if the mouse is inside a box
-        for (const [i, box] of value[currentImageIndex].boxes.entries()) {
+        for (const [i, box] of value.boxes.entries()) {
             if (box.isPointInsideBox(mouseX, mouseY)) {
                 selectBox(i);
                 box.startDrag(event);
@@ -156,12 +172,14 @@
             return;
         }
 
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
+        console.log("Scale Factor Here", scaleFactor); 
 
-        for (const [_, box] of value[currentImageIndex].boxes.entries()) {
-            const handleIndex = box.indexOfPointInsideHandle(mouseX, mouseY);
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = (event.clientX - rect.left) / scaleFactor;
+        const mouseY = (event.clientY - rect.top) / scaleFactor;
+
+        for (const [_, box] of value.boxes.entries()) {
+            const handleIndex = box.indexOfPointInsideHandle(mouseX, mouseY); // Check if the mouse is over any of the resizing handles
             if (handleIndex >= 0) {
                 canvas.style.cursor = box.resizeHandles[handleIndex].cursor;
                 return;
@@ -189,22 +207,21 @@
         }
 
         let color: string;
-
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left - canvasXmin) / scaleFactor;
-        const y = (event.clientY - rect.top - canvasYmin) / scaleFactor;
+        const x = event.clientX - rect.left - canvasXmin;
+        const y = event.clientY - rect.top - canvasYmin;
 
         if (choicesColors.length > 0) {
             color = colorHexToRGB(choicesColors[0]);
         } else if (singleBox) {
-            if (value[currentImageIndex].boxes.length > 0) {
-                color = value[currentImageIndex].boxes[0].color;
+            if (value.boxes.length > 0) {
+                color = value.boxes[0].color;
             } else {
                 color = Colors[0];
             }
         } else {
             color =
-                Colors[value[currentImageIndex].boxes.length % Colors.length];
+                Colors[value.boxes.length % Colors.length];
         }
 
         let box = new Box(
@@ -225,22 +242,23 @@
             handleSize,
             boxThickness,
             boxSelectedThickness,
+            scaleFactor,
         );
 
         // If the box is too small, don't create it
         box.startCreating(event, rect.left, rect.top);
 
         if (singleBox) {
-            value[currentImageIndex].boxes = [box];
+            value.boxes = [box];
             setDragMode();
         } else {
-            value[currentImageIndex].boxes = [
+            value.boxes = [
                 box,
-                ...value[currentImageIndex].boxes,
+                ...value.boxes,
             ];
         }
         selectBox(0);
-        draw();
+        draw(); // Box is render from here
         dispatch("change");
     }
 
@@ -266,9 +284,9 @@
 
         if (
             selectedBox >= 0 &&
-            selectedBox < value[currentImageIndex].boxes.length
+            selectedBox < value.boxes.length
         ) {
-            if (value[currentImageIndex].boxes[selectedBox].getArea() < 1) {
+            if (value.boxes[selectedBox].getArea() < 1) {
                 onDeleteBox();
             } else if (!disableEditBoxes) {
                 newModalVisible = true;
@@ -283,7 +301,7 @@
 
         if (
             selectedBox >= 0 &&
-            selectedBox < value[currentImageIndex].boxes.length &&
+            selectedBox < value.boxes.length &&
             !disableEditBoxes
         ) {
             editModalVisible = true;
@@ -312,9 +330,9 @@
 
         if (
             selectedBox >= 0 &&
-            selectedBox < value[currentImageIndex].boxes.length
+            selectedBox < value.boxes.length
         ) {
-            let box = value[currentImageIndex].boxes[selectedBox];
+            let box = value.boxes[selectedBox];
             if (ret == 1) {
                 box.label = label;
                 box.color = colorHexToRGB(color);
@@ -340,9 +358,9 @@
 
         if (
             selectedBox >= 0 &&
-            selectedBox < value[currentImageIndex].boxes.length
+            selectedBox < value.boxes.length
         ) {
-            let box = value[currentImageIndex].boxes[selectedBox];
+            let box = value.boxes[selectedBox];
             if (ret == 1) {
                 box.label = label;
                 box.color = colorHexToRGB(color);
@@ -361,9 +379,9 @@
 
         if (
             selectedBox >= 0 &&
-            selectedBox < value[currentImageIndex].boxes.length
+            selectedBox < value.boxes.length
         ) {
-            value[currentImageIndex].boxes.splice(selectedBox, 1);
+            value.boxes.splice(selectedBox, 1);
             selectBox(-1);
             if (singleBox) {
                 setCreateMode();
@@ -372,54 +390,7 @@
         }
     }
 
-    function resize() {
-        if (value === null) {
-            return;
-        }
-
-        if (canvas) {
-            scaleFactor = 1;
-            canvas.width = canvas.clientWidth;
-            if (image !== null) {
-                if (image.width > canvas.width) {
-                    scaleFactor = canvas.width / image.width;
-                    imageWidth = image.width * scaleFactor;
-                    imageHeight = image.height * scaleFactor;
-                    canvasXmin = 0;
-                    canvasYmin = 0;
-                    canvasXmax = imageWidth;
-                    canvasYmax = imageHeight;
-                    canvas.height = imageHeight;
-                } else {
-                    imageWidth = image.width;
-                    imageHeight = image.height;
-                    var x = (canvas.width - imageWidth) / 2;
-                    canvasXmin = x;
-                    canvasYmin = 0;
-                    canvasXmax = x + imageWidth;
-                    canvasYmax = image.height;
-                    canvas.height = imageHeight;
-                }
-            } else {
-                canvasXmin = 0;
-                canvasYmin = 0;
-                canvasXmax = canvas.width;
-                canvasYmax = canvas.height;
-                canvas.height = canvas.clientHeight;
-            }
-            if (canvasXmax > 0 && canvasYmax > 0) {
-                for (const box of value[currentImageIndex].boxes) {
-                    box.canvasXmin = canvasXmin;
-                    box.canvasYmin = canvasYmin;
-                    box.canvasXmax = canvasXmax;
-                    box.canvasYmax = canvasYmax;
-                    box.setScaleFactor(scaleFactor);
-                }
-            }
-            draw();
-            dispatch("change");
-        }
-    }
+    
     const observer = new ResizeObserver(resize);
 
     function parseInputBoxes() {
@@ -427,8 +398,8 @@
             return;
         }
 
-        for (let i = 0; i < value[currentImageIndex].boxes.length; i++) {
-            let box = value[currentImageIndex].boxes[i];
+        for (let i = 0; i < value.boxes.length; i++) {
+            let box = value.boxes[i];
             if (!(box instanceof Box)) {
                 let color = "";
                 let label = "";
@@ -462,11 +433,12 @@
                     boxThickness,
                     boxSelectedThickness,
                 );
-                value[currentImageIndex].boxes[i] = box;
+                value.boxes[i] = box;
             }
         }
     }
 
+    // When the value changes, setImage, parseInputBoxes, resize and draw are called
     $: {
         value;
         setImage();
@@ -488,6 +460,59 @@
         }
     }
 
+    function resize() {
+        if (value === null) {
+            return;
+        }
+        if (canvas) {
+            scaleFactor = 1.0;
+            
+            if (image !== null) {
+                // console.log("Image size", image.width, image.height)
+
+                // Set canvas drawing resolution to the original image size
+                canvas.width = image.width;
+                canvas.height = image.height;
+                
+                // Fixed pixel value to make it fit within the parent container or the viewport.
+                canvas.style.width = '100%'; // Makes the canvas responsive
+                canvas.style.height = 'auto'; // Maintains the aspect ratio
+
+                // No need to scale the image; it matches the canvas size
+                imageWidth = image.width;
+                imageHeight = image.height;
+                canvasXmin = 0;
+                canvasYmin = 0;
+                canvasXmax = imageWidth;
+                canvasYmax = imageHeight;
+
+                // But need to calculate the scale factor base on the client width
+                scaleFactor = canvas.clientWidth / image.width;
+            } else {
+                // Handle the case when there's no image
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                canvasXmin = 0;
+                canvasYmin = 0;
+                canvasXmax = canvas.width;
+                canvasYmax = canvas.height;
+            }
+
+            // Update boxes if any
+            if (canvasXmax > 0 && canvasYmax > 0) {
+                for (const box of value.boxes) {
+                    box.canvasXmin = canvasXmin;
+                    box.canvasYmin = canvasYmin;
+                    box.canvasXmax = canvasXmax;
+                    box.canvasYmax = canvasYmax;
+                    box.setScaleFactor(scaleFactor);
+                }
+            }
+            draw();
+            dispatch("change");
+        }
+    }
+
     onMount(() => {
         if (Array.isArray(choices) && choices.length > 0) {
             if (!Array.isArray(choicesColors) || choicesColors.length == 0) {
@@ -504,13 +529,23 @@
         if (
             selectedBox < 0 &&
             value !== null &&
-            value[currentImageIndex].boxes.length > 0
+            value.boxes.length > 0
         ) {
             selectBox(0);
         }
         setImage();
         resize();
         draw();
+
+
+        // Add event listeners
+        canvas.addEventListener("mousemove", handleMouseMove);
+        canvas.addEventListener('mouseleave', handleMouseLeave);
+
+        return () => {
+        canvas.removeEventListener('mousemove', handleMouseMove);
+        canvas.removeEventListener('mouseleave', handleMouseLeave);
+        };
     });
 
     function handleCanvasFocus() {
@@ -525,41 +560,7 @@
         document.removeEventListener("keydown", handleKeyPress);
     });
 
-    // Handle previous image
-    function handlePreviousImage() {
-        if (!value) {
-            return;
-        }
-
-        if (currentImageIndex > 0) {
-            currentImageIndex -= 1;
-            if (value !== null && value[currentImageIndex].boxes.length == 0) {
-                setCreateMode();
-            }
-            selectBox(-1);
-            setImage();
-            resize();
-            draw();
-        }
-    }
-
-    // Handle next image
-    function handleNextImage() {
-        if (!value) {
-            return;
-        }
-
-        if (currentImageIndex < value.length - 1) {
-            currentImageIndex += 1;
-            if (value !== null && value[currentImageIndex].boxes.length == 0) {
-                setCreateMode();
-            }
-            selectBox(-1);
-            setImage();
-            resize();
-            draw();
-        }
-    }
+    
 </script>
 
 <div
@@ -578,16 +579,28 @@
     ></canvas>
 </div>
 
+{#if showPanel}
+    <div class="panel">
+        Mouse Position: X: {parseInt(mouseX.toString())}, Y: {parseInt(mouseY.toString())}
+    </div>
+    <div class="panel">
+        Image Position: X: {parseInt((mouseX / scaleFactor).toString())}, Y: {parseInt((mouseY / scaleFactor).toString())}
+    </div>
+    <div class="panel">
+        Canvas clientWidth: {canvas.clientWidth}, clientHeight: {canvas.clientHeight}
+    </div>
+    <div class="panel">
+        Canvas with: {canvas.width}, height: {canvas.height}
+    </div>
+    <div class="panel">
+        Current scale factor: {scaleFactor}
+    </div>
+    <div class="panel">
+        Mode {mode === 0 ? "Createtion" : mode === 1 ? "Drag" : "Calibrate"}
+    </div>
+{/if}
+
 {#if interactive}
-    <span>
-        <button
-            class="icon"
-            aria-label="Back to previous image"
-            on:click={() => handlePreviousImage()}
-        >
-            <Previous />
-        </button>
-    </span>
     <span class="canvas-control">
         <button
             class="icon"
@@ -617,12 +630,12 @@
         {choices}
         {choicesColors}
         label={selectedBox >= 0 &&
-        selectedBox < value[currentImageIndex].boxes.length
-            ? value[currentImageIndex].boxes[selectedBox].label
+        selectedBox < value.boxes.length
+            ? value.boxes[selectedBox].label
             : ""}
         color={selectedBox >= 0 &&
-        selectedBox < value[currentImageIndex].boxes.length
-            ? colorRGBAToHex(value[currentImageIndex].boxes[selectedBox].color)
+        selectedBox < value.boxes.length
+            ? colorRGBAToHex(value.boxes[selectedBox].color)
             : ""}
     />
 {/if}
@@ -635,23 +648,24 @@
         showRemove={false}
         {choicesColors}
         label={selectedBox >= 0 &&
-        selectedBox < value[currentImageIndex].boxes.length
-            ? value[currentImageIndex].boxes[selectedBox].label
+        selectedBox < value.boxes.length
+            ? value.boxes[selectedBox].label
             : ""}
         color={selectedBox >= 0 &&
-        selectedBox < value[currentImageIndex].boxes.length
-            ? colorRGBAToHex(value[currentImageIndex].boxes[selectedBox].color)
+        selectedBox < value.boxes.length
+            ? colorRGBAToHex(value.boxes[selectedBox].color)
             : ""}
     />
 {/if}
 
 <style>
     .canvas-annotator {
-        border-color: var(--block-border-color);
+        /* border-color: var(--block-border-color); */
         width: 100%;
         height: 100%;
         display: block;
         touch-action: none;
+        border: 2px solid var(--border-color-primary);
     }
 
     .canvas-control {
@@ -688,5 +702,10 @@
 
     .canvas-container:focus {
         outline: none;
+    }
+
+    .canvas-container {
+        width: 100%;
+        max-width: none;
     }
 </style>

@@ -1,21 +1,23 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
-    import { Download, Image as ImageIcon } from "@gradio/icons";
+    import { Download } from "@gradio/icons";
     import { DownloadLink } from "@gradio/wasm/svelte";
+    import { createEventDispatcher } from "svelte";
 
-    import { BlockLabel, IconButton } from "@gradio/atoms";
+    import { IconButton } from "@gradio/atoms";
     import type { I18nFormatter, SelectData } from "@gradio/utils";
 
+    import { AnnotatedImageData } from "../ts";
     import ImageCanvas from "./image-canvas.svelte";
-    import AnnotatedImageData from "../ts/annotated-image-data";
 
-    export let value: null | AnnotatedImageData[] = null;
+    export let value: null | AnnotatedImageData = null;
     export let label: string | undefined = undefined;
     export let show_label: boolean;
     export let selectable = false;
     export let interactive: boolean;
-    export let i18n: I18nFormatter;
+    export let i18n: I18nFormatter;``
     export let showDownloadButton: boolean;
+
+    export let calibration_ratio: number;
 
     // Box properties
     export let boxAlpha;
@@ -31,11 +33,13 @@
     // Cursor for each mode
     export let handlesCursor: boolean;
 
-    let currentImageIndex = 0; // Current index of the image being displayed
 
     /**
      * ================================= Functions =================================
      */
+
+    console.log(value)
+    
 
     // Create a dispatcher to dispatch events
     const dispatch = createEventDispatcher<{
@@ -47,13 +51,13 @@
     }>();
 </script>
 
-<BlockLabel {show_label} Icon={ImageIcon} label={label || "Junaid"} />
+<!-- <BlockLabel {show_label} Icon={ImageIcon} label={label || "Junaid"} /> -->
 
 <div class="icon-buttons">
     {#if showDownloadButton && value !== null}
         <DownloadLink
-            href={value[currentImageIndex].image.url}
-            download={value[currentImageIndex].image.orig_name || "image"}
+            href={value.image.url}
+            download={value.image.orig_name || "image"}
         >
             <IconButton Icon={Download} label={i18n("common.download")} />
         </DownloadLink>
@@ -63,10 +67,10 @@
 <div data-testid="image" class="image-container">
     <div class="upload-container">
         <div class:selectable class="image-frame">
-            {#if value && value.length > 0}
+            {#if value}
                 <ImageCanvas
-                    bind:value
-                    bind:currentImageIndex
+                    bind:value={value}
+                    bind:calibration_ratio
                     on:change={() => dispatch("change")}
                     {boxAlpha}
                     {labelList}
@@ -79,7 +83,7 @@
                     {disableEditBoxes}
                     {handlesCursor}
                     {boxSelectedThickness}
-                    src={value[currentImageIndex].image.url}
+                    src={value.image.url}
                 />
             {/if}
         </div>

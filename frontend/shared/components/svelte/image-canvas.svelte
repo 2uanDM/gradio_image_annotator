@@ -3,16 +3,19 @@
     import type { HTMLImgAttributes } from "svelte/elements";
     import { createEventDispatcher } from "svelte";
     import Canvas from "./canvas.svelte";
-    import AnnotatedImageData from "../ts/annotated-image-data";
+    import { AnnotatedImageData } from "../ts";
 
     interface Props extends HTMLImgAttributes {
         "data-testid"?: string;
     }
 
-    export let value: null | AnnotatedImageData[];
-    export let currentImageIndex: number;
+    export let value: AnnotatedImageData | null |undefined;
     export let src: HTMLImgAttributes["src"] = undefined;
     export let interactive: boolean;
+
+    export let calibration_ratio: number;
+
+
     export let boxAlpha: number;
     export let labelList: string[];
     export let labelColors: string[];
@@ -53,8 +56,8 @@
 </script>
 
 <Canvas
-    bind:value
-    bind:currentImageIndex
+    bind:value={value}
+    bind:calibration_ratio
     imageUrl={resolved_src}
     {interactive}
     {boxAlpha}
