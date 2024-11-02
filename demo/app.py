@@ -34,7 +34,11 @@ def _handle_folder_selection(list_files: List[str] | None):
     for file_path in list_files:
         if file_path.endswith(".png") or file_path.endswith(".jpg"):
             base_name = os.path.basename(file_path)
-            current_loaded_images[base_name] = file_path
+            current_loaded_images[base_name] = {
+                "file_path": file_path,
+                "calibration": [0, 0],  # [width, height]
+                "annotations": {},
+            }
 
     print(f"🚀 Current loaded image: {current_loaded_images}")
 
@@ -42,7 +46,7 @@ def _handle_folder_selection(list_files: List[str] | None):
 
     return gr.update(choices=file_names, value=file_names[0]), gr.update(
         value=prepare_annotate_data(
-            current_loaded_images[file_names[0]],
+            current_loaded_images[file_names[0]].get("file_path", ""),
         )
     )
 
@@ -99,16 +103,19 @@ with gr.Blocks(
                 prev_button = gr.Button(
                     value="< Prev",
                     variant="primary",
+                    scale=20,
                 )
 
-                calibrate_button = gr.Button(
-                    value="Start Calibrate",
+                reload_image = gr.Button(
+                    value="Reload image",
                     variant="stop",
+                    scale=60,
                 )
 
                 next_button = gr.Button(
                     value="Next >",
                     variant="primary",
+                    scale=20,
                 )
 
             with gr.Row(variant="panel"):

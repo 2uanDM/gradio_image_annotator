@@ -5,12 +5,12 @@
 </script>
 
 <script lang="ts">
-    import type { Gradio, SelectData } from "@gradio/utils";
     import { Block } from "@gradio/atoms";
-    import { StatusTracker } from "@gradio/statustracker";
     import type { LoadingStatus } from "@gradio/statustracker";
-    import { AnnotatedImageData } from "./shared/components/ts";
+    import { StatusTracker } from "@gradio/statustracker";
+    import type { Gradio, SelectData } from "@gradio/utils";
     import ImageAnnotator from "./shared/components/svelte/image-annotator.svelte";
+    import { AnnotatedImageData } from "./shared/components/ts";
     // import { ListAnnotatedImageData } from "./shared/components/ts";
 
     // Required props of Gradio
@@ -29,7 +29,7 @@
     export let loading_status: LoadingStatus;
     export let interactive: boolean;
 
-    export let calibration_ratio: number;
+    export let calibration_ratio: [number, number] = [0, 0];
 
     export let label_list: string[];
     export let label_colors: string[];
@@ -42,7 +42,6 @@
     export let boxThickness: number;
     export let boxSelectedThickness: number;
     export let disableEditBoxes: boolean;
-    export let singleBox: boolean;
     export let handlesCursor: boolean;
 
     export let gradio: Gradio<{
@@ -81,7 +80,7 @@
 
     <ImageAnnotator
         bind:value={value}
-        bind:calibration_ratio
+        bind:calibration_ratio={calibration_ratio}
         on:change={() => gradio.dispatch("change")}
         selectable={_selectable}
         {interactive}
@@ -92,7 +91,7 @@
         boxMinSize={box_min_size}
         on:edit={() => gradio.dispatch("edit")}
         on:error={({ detail }) => {
-            loading_status = loading_status || {};
+            loading_status = loading_status;
             loading_status.status = "error";
             gradio.dispatch("error", detail);
         }}
@@ -102,7 +101,6 @@
         {boxThickness}
         {boxSelectedThickness}
         {disableEditBoxes}
-        {singleBox}
         {showDownloadButton}
         {handlesCursor}
     ></ImageAnnotator>
