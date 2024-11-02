@@ -75,6 +75,7 @@ let mouseY = 0;
 
 const dispatch = createEventDispatcher < {
     change: undefined;
+    calibrated: [number, number];
 } > ();
 
 function handleMouseMove(event: MouseEvent) {
@@ -305,6 +306,7 @@ function onCalibrationModalChange(event) {
             event.detail.calibration_ratio[0] / lastBox.getWidth(),
             event.detail.calibration_ratio[1] / lastBox.getHeight()
         ]; // 1 pixel in the current canvas is equal to how many milimeters in the real world
+        dispatch("calibrated", calibration_ratio);
     }
 
     draw(); // Update the UI

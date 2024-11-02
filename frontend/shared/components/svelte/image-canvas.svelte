@@ -1,17 +1,17 @@
 <script lang="ts">
-import {
-  resolve_wasm_src
-} from "@gradio/wasm/svelte";
-import {
-  createEventDispatcher
-} from "svelte";
-import type {
-  HTMLImgAttributes
-} from "svelte/elements";
-import {
-  AnnotatedImageData
-} from "../ts";
-import Canvas from "./canvas.svelte";
+	import {
+	  resolve_wasm_src
+	} from "@gradio/wasm/svelte";
+	import {
+	  createEventDispatcher
+	} from "svelte";
+	import type {
+	  HTMLImgAttributes
+	} from "svelte/elements";
+	import {
+	  AnnotatedImageData
+	} from "../ts";
+	import Canvas from "./canvas.svelte";
 
 interface Props extends HTMLImgAttributes {
     "data-testid" ? : string;
@@ -58,12 +58,13 @@ $: {
 
 const dispatch = createEventDispatcher < {
     change: undefined;
+    calibrated: [number, number];
 } > ();
 </script>
 
 <Canvas
     bind:value={value}
-    bind:calibration_ratio={calibration_ratio}
+    calibration_ratio={calibration_ratio}
     imageUrl={resolved_src}
     {interactive}
     {boxAlpha}
@@ -76,4 +77,5 @@ const dispatch = createEventDispatcher < {
     {disableEditBoxes}
     {handlesCursor}
     on:change={() => dispatch("change")}
+    on:calibrated={(event) => dispatch("calibrated", event.detail)}
     />

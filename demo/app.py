@@ -37,7 +37,7 @@ def _handle_folder_selection(list_files: List[str] | None):
             current_loaded_images[base_name] = {
                 "file_path": file_path,
                 "calibration": [0, 0],  # [width, height]
-                "annotations": {},
+                "annotations": [],
             }
 
     print(f"🚀 Current loaded image: {current_loaded_images}")
@@ -46,9 +46,63 @@ def _handle_folder_selection(list_files: List[str] | None):
 
     return gr.update(choices=file_names, value=file_names[0]), gr.update(
         value=prepare_annotate_data(
-            current_loaded_images[file_names[0]].get("file_path", ""),
+            current_loaded_images[file_names[0]],
         )
     )
+
+
+def handlePrevButtonClick(dropdown):
+    if dropdown is None:
+        gr.Info("Please select an folder first")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(EXAMPLE_DATA)
+        ) if current_loaded_images else EXAMPLE_DATA
+
+    list_keys = list(current_loaded_images.keys())
+
+    index = list_keys.index(dropdown)
+
+    if index == 0:
+        gr.Info("You are at the first image")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index]])
+        )
+    else:
+        dropdown = list_keys[index - 1]
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index - 1]])
+        )
+
+
+def handleNextButtonClick(dropdown):
+    if dropdown is None:
+        gr.Info("Please select an folder first")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(EXAMPLE_DATA)
+        ) if current_loaded_images else EXAMPLE_DATA
+
+    list_keys = list(current_loaded_images.keys())
+
+    index = list_keys.index(dropdown)
+
+    if index == len(list_keys) - 1:
+        gr.Info("You are at the last image")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index]])
+        )
+    else:
+        dropdown = list_keys[index + 1]
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index + 1]])
+        )
+
+
+def handleReloadButtonClick(dropdown):
+    if dropdown is None:
+        gr.Info("Please select an folder first")
+        return gr.update(value=prepare_annotate_data(EXAMPLE_DATA))
+
+    return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
 
 
 with gr.Blocks(
@@ -147,6 +201,25 @@ with gr.Blocks(
                 fn=_show_hide_setting_tab,
                 inputs=[setting_state],
                 outputs=[setting_col, show_hide_setting_btn, setting_state],
+            )
+
+            # Navigation:
+            prev_button.click(
+                fn=handlePrevButtonClick,
+                inputs=[dropdown],
+                outputs=[dropdown, annotator],
+            )
+
+            next_button.click(
+                fn=handleNextButtonClick,
+                inputs=[dropdown],
+                outputs=[dropdown, annotator],
+            )
+
+            reload_image.click(
+                fn=handleReloadButtonClick,
+                inputs=[dropdown],
+                outputs=[annotator],
             )
 
 

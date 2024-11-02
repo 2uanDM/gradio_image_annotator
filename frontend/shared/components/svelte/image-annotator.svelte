@@ -59,6 +59,7 @@ const dispatch = createEventDispatcher < {
     drag: boolean;
     upload ? : never;
     select: SelectData;
+    calibrated: [number, number];
 } > ();
 </script>
 
@@ -83,6 +84,7 @@ const dispatch = createEventDispatcher < {
                 bind:value={value}
                 bind:calibration_ratio={calibration_ratio}
                 on:change={() => dispatch("change")}
+                on:calibrated={(e) => dispatch("calibrated", e.detail)}
                 {boxAlpha}
                 {labelList}
                 {labelColors}

@@ -262,12 +262,26 @@ export default class Box {
       let labelY = this.ymin - labelHeight;
       ctx.fillStyle = "white";
       [labelX, labelY] = this.toCanvasCoordinates(labelX, labelY);
-      ctx.fillRect(labelX, labelY, labelWidth, labelHeight);
+      ctx.fillRect(
+        labelX / this.scaleFactor,
+        labelY / this.scaleFactor,
+        labelWidth / this.scaleFactor,
+        labelHeight / this.scaleFactor
+      );
       ctx.lineWidth = 1;
       ctx.strokeStyle = "black";
-      ctx.strokeRect(labelX, labelY, labelWidth, labelHeight);
+      ctx.strokeRect(
+        labelX / this.scaleFactor,
+        labelY / this.scaleFactor,
+        labelWidth / this.scaleFactor,
+        labelHeight / this.scaleFactor
+      );
       ctx.fillStyle = "black";
-      ctx.fillText(this.label, labelX + 5, labelY + 15);
+      ctx.fillText(
+        this.label,
+        labelX / this.scaleFactor + 5,
+        labelY / this.scaleFactor + 15
+      );
     }
 
     // Render the handles
@@ -275,10 +289,10 @@ export default class Box {
     for (const handle of this.resizeHandles) {
       [xmin, ymin] = this.toCanvasCoordinates(handle.xmin, handle.ymin);
       ctx.fillRect(
-        xmin,
-        ymin,
-        handle.xmax - handle.xmin,
-        handle.ymax - handle.ymin
+        xmin / this.scaleFactor,
+        ymin / this.scaleFactor,
+        (handle.xmax - handle.xmin) / this.scaleFactor,
+        (handle.ymax - handle.ymin) / this.scaleFactor
       );
     }
   }

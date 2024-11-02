@@ -1,8 +1,8 @@
-def prepare_annotate_data(image_path):
+def prepare_annotate_data(image_data: dict):
     """
     Prepare `AnnotatedImageData` data structure for the image annotation block.
     """
     return {
-        "image": image_path,
-        "boxes": [],
+        "image": image_data.get("file_path", ""),
+        "boxes": image_data.get("annotations", []),
     }

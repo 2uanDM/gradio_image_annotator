@@ -1,6 +1,7 @@
 <svelte:options accessors={true} />
 
 <script context="module" lang="ts">
+	import { createEventDispatcher } from 'svelte';
     export { default as BaseExample } from "./Example.svelte";
 </script>
 
@@ -53,7 +54,12 @@
         clear: never;
         select: SelectData;
         share: ShareData;
+        calibrated: [number, number];
     }>;
+
+    const dispatch = createEventDispatcher<{
+        calibrated: [number, number];
+    }>();
 
     let dragging: boolean;
 </script>
@@ -82,6 +88,9 @@
         bind:value={value}
         bind:calibration_ratio={calibration_ratio}
         on:change={() => gradio.dispatch("change")}
+        on:calibrated={({ detail }) => {
+            dispatch("calibrated", detail);
+        }}
         selectable={_selectable}
         {interactive}
         i18n={gradio.i18n}

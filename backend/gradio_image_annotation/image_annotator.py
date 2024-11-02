@@ -9,10 +9,17 @@ import PIL.Image
 from gradio import image_utils, utils
 from gradio.components.base import Component
 from gradio.data_classes import FileData, GradioModel
-from gradio.events import Events
+from gradio.events import EventListener, Events
 from PIL import ImageOps
 
 PIL.Image.init()  # fixes https://github.com/gradio-app/gradio/issues/2843
+
+
+class CustomEvents(Events):
+    calibrated = EventListener(
+        "calibrated",
+        doc="Triggered when the finish calibrating of the image. See `.calibrate()` method for more details.",
+    )
 
 
 class AnnotatedImageData(GradioModel):
@@ -34,9 +41,11 @@ class image_annotator(Component):
     """
 
     EVENTS = [
-        Events.clear,
-        Events.change,
-        Events.upload,
+        CustomEvents.clear,
+        CustomEvents.change,
+        CustomEvents.upload,
+        CustomEvents.click,
+        CustomEvents.calibrated,
     ]
 
     data_model = AnnotatedImageData
