@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import gradio as gr
-from gradio_image_annotation import image_annotator
+from gradio_image_annotation import ImageAnnotator
 from gradio_image_annotation.constants import CSS, EXAMPLE_DATA, JS_SCRIPT
 from gradio_image_annotation.utils import prepare_annotate_data
 
@@ -105,6 +105,12 @@ def handleReloadButtonClick(dropdown):
     return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
 
 
+def update_calibration_data(annotator):
+    print("🚀 Update calibration data")
+    print(f"==>> annotator: {annotator}")
+    global current_loaded_images
+
+
 with gr.Blocks(
     js=JS_SCRIPT,
     theme=gr.themes.Soft(primary_hue="slate"),
@@ -143,11 +149,11 @@ with gr.Blocks(
         with gr.Column(scale=70, variant="panel") as annotatate_col:
             gr.Markdown("#### Step 2: Annotate the image")
 
-            annotator = image_annotator(
+            annotator = ImageAnnotator(
                 value=prepare_annotate_data(current_loaded_images[dropdown.value])
                 if current_loaded_images
                 else EXAMPLE_DATA,
-                boxes_alpha=0.1,
+                boxes_alpha=0,
                 label_list=["Person", "Vehicle"],
                 label_colors=[(0, 255, 0), (255, 0, 0)],
                 box_thickness=0.1,
@@ -221,6 +227,8 @@ with gr.Blocks(
                 inputs=[dropdown],
                 outputs=[annotator],
             )
+
+            annotator.calibrated(fn=update_calibration_data, inputs=[annotator])
 
 
 if __name__ == "__main__":

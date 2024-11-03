@@ -306,6 +306,8 @@ function onCalibrationModalChange(event) {
             event.detail.calibration_ratio[0] / lastBox.getWidth(),
             event.detail.calibration_ratio[1] / lastBox.getHeight()
         ]; // 1 pixel in the current canvas is equal to how many milimeters in the real world
+        value.calibration_ratio = calibration_ratio;
+        // console.log("Calibration ratio", calibration_ratio);
         dispatch("calibrated", calibration_ratio);
     }
 

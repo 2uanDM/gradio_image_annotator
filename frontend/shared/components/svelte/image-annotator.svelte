@@ -84,7 +84,7 @@ const dispatch = createEventDispatcher < {
                 bind:value={value}
                 bind:calibration_ratio={calibration_ratio}
                 on:change={() => dispatch("change")}
-                on:calibrated={(e) => dispatch("calibrated", e.detail)}
+                on:calibrated={(e) => {dispatch("calibrated", e.detail); console.log("dispatch in image-annotator")}}
                 {boxAlpha}
                 {labelList}
                 {labelColors}

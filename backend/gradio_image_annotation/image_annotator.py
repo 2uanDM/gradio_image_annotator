@@ -25,6 +25,7 @@ class CustomEvents(Events):
 class AnnotatedImageData(GradioModel):
     image: FileData
     boxes: List[dict] = []
+    calibration_ratio: List[float] = [0, 0]
 
 
 def rgb2hex(r, g, b):
@@ -34,7 +35,7 @@ def rgb2hex(r, g, b):
     return "#{:02x}{:02x}{:02x}".format(clip(r), clip(g), clip(b))
 
 
-class image_annotator(Component):
+class ImageAnnotator(Component):
     """
     Creates a component to annotate images with bounding boxes. The bounding boxes can be created and edited by the user or be passed by code.
     It is also possible to predefine a set of valid classes and colors.
@@ -204,6 +205,15 @@ class image_annotator(Component):
         )
 
     def preprocess_image(self, image: FileData | None) -> str | None:
+        """
+        Preprocesses the input image passed from the frontend.
+
+        Args:
+            image (FileData | None): The input image file.
+
+        Returns:
+            str | None: The preprocessed image as a string or None if the input image is None.
+        """
         if image is None:
             return None
         file_path = Path(image.path)
@@ -272,13 +282,14 @@ class image_annotator(Component):
         ret_value = {
             "image": self.preprocess_image(payload.image),
             "boxes": self.preprocess_boxes(payload.boxes),
+            "calibration_ratio": payload.calibration_ratio,
         }
         return ret_value
 
     def postprocess(self, value: dict | None) -> AnnotatedImageData | None:
         """
         Parameters:
-            value: A dict with an image and an optional list of boxes or None.
+            value: A dict with an image and an optional list of boxes or None and calibration_ratio.
         Returns:
             Returns an AnnotatedImageData object.
         """
@@ -321,7 +332,17 @@ class image_annotator(Component):
         else:
             raise ValueError(f"An image must be provided. Got {value}")
 
-        return AnnotatedImageData(image=image, boxes=boxes)
+        # Check and parse calibration ratio
+        calibration_ratio = value.setdefault("calibration_ratio", [0, 0])
+        if not isinstance(calibration_ratio, list) or len(calibration_ratio) != 2:
+            raise ValueError(
+                "Calibration ratio must be a list of two floats. "
+                f"Got {calibration_ratio}"
+            )
+
+        return AnnotatedImageData(
+            image=image, boxes=boxes, calibration_ratio=calibration_ratio
+        )
 
     def process_example(self, value: dict | None) -> FileData | None:
         if value is None:
@@ -355,4 +376,5 @@ class image_annotator(Component):
                     "color": (250, 185, 0),
                 }
             ],
+            "calibration_ratio": [0, 0],
         }

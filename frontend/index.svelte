@@ -89,7 +89,7 @@
         bind:calibration_ratio={calibration_ratio}
         on:change={() => gradio.dispatch("change")}
         on:calibrated={({ detail }) => {
-            dispatch("calibrated", detail);
+            gradio.dispatch("calibrated", detail);
         }}
         selectable={_selectable}
         {interactive}
