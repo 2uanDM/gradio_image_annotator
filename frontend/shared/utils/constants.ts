@@ -10,10 +10,12 @@ export enum BoxProperty {
   ScaleFactor = 1,
 }
 
+export const DefaultColor = "#00FF00"; // Green
+
 export const Colors = [
-  "rgb(255, 168, 77)",
-  "rgb(92, 172, 238)",
-  "rgb(255, 99, 71)",
+  "rgb(0, 255, 0)",
+  "rgb(255, 0, 0)",
+  "rgb(0, 0, 255)",
   "rgb(118, 238, 118)",
   "rgb(255, 145, 164)",
   "rgb(0, 191, 255)",

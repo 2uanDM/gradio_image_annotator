@@ -174,8 +174,6 @@ with gr.Blocks(
             if current_loaded_images:
                 annotator = ImageAnnotator(
                     value=prepare_annotate_data(current_loaded_images[dropdown.value]),
-                    label_list=["car", "truck", "motorbike"],
-                    label_colors=[(255, 0, 0), (0, 255, 0), (0, 0, 255)],
                     boxes_alpha=0,
                     box_thickness=0.1,
                 )

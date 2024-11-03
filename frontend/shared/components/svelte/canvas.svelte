@@ -73,6 +73,8 @@ let showPanel = false; // Information panel
 let mouseX = 0;
 let mouseY = 0;
 
+let zoomScale = 1.0;
+
 const dispatch = createEventDispatcher < {
     change: undefined;
     calibrated: [number, number];
