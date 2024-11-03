@@ -20,9 +20,11 @@
 
     function dispatchChange(ret: number) {
         // if currentLabel is not in choices, then it is a new label
-        if (choices.filter((c) => c[0] === currentLabel).length === 0) {
-            choices.push([currentLabel, currentLabel]);
-            choicesColors.push(currentColor);
+        if (currentLabel !== "") {
+            if (choices.filter((c) => c[0] === currentLabel).length === 0) {
+                choices.push([currentLabel, currentLabel]);
+                choicesColors.push(currentColor);
+            }
         }
 
 

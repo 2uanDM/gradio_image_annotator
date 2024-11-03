@@ -260,6 +260,7 @@ function calibrateBox(event: PointerEvent) {
         boxThickness,
         boxSelectedThickness,
         scaleFactor,
+        value.calibration_ratio
     );
 
     box.startCreating(event, rect.left, rect.top);
@@ -306,8 +307,8 @@ function onCalibrationModalChange(event) {
     if (event.detail.ret == 1) {
         // 1 pixel in the current canvas is equal to how many milimeters in the real world
         value.calibration_ratio = [
-            event.detail.calibration_ratio[0] / lastBox.getWidth(),
-            event.detail.calibration_ratio[1] / lastBox.getHeight()
+            event.detail.calibration_ratio[0] / lastBox.getWidth() * scaleFactor,
+            event.detail.calibration_ratio[1] / lastBox.getHeight() * scaleFactor
         ];
         // console.log("Calibration ratio", calibration_ratio);
         dispatch("calibrated", calibration_ratio);
@@ -352,6 +353,7 @@ function createBox(event: PointerEvent) {
         boxThickness,
         boxSelectedThickness,
         scaleFactor,
+        value.calibration_ratio
     );
 
     // If the box is too small, don't create it
@@ -502,6 +504,8 @@ function parseInputBoxes() {
         return;
     }
 
+    let calibration_ratio = value.calibration_ratio;
+
     for (let i = 0; i < value.boxes.length; i++) {
         let box = value.boxes[i];
         if (!(box instanceof Box)) {
@@ -536,6 +540,8 @@ function parseInputBoxes() {
                 handleSize,
                 boxThickness,
                 boxSelectedThickness,
+                scaleFactor,
+                calibration_ratio
             );
             value.boxes[i] = box;
         }
@@ -707,10 +713,10 @@ onDestroy(() => {
                 Calibration ratio: <b>{value.calibration_ratio[0].toFixed(4)} x {value.calibration_ratio[1].toFixed(4)} (mm)</b> per pixel
             </div>
         </div>
-
     </div>
     <div><div class="panel">
         Mode: <b style="color: red">{mode === 0 ? "Creation" : mode === 1 ? "Drag" : "Calibrate"}</b>
+        Current box size: <b></b>
     </div></div>
 </div>
 {/if}

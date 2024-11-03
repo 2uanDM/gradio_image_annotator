@@ -50,6 +50,7 @@ export default class Box {
     ymax: number;
     cursor: string;
   }[];
+  calibration_ratio: [number, number];
 
   constructor(
     renderCallBack: () => void, // draw
@@ -69,7 +70,8 @@ export default class Box {
     handleSize: number = BoxProperty.HandleSize, // handleSize (dot when click on it to resize)
     thickness: number = BoxProperty.Thickness,
     selectedThickness: number = BoxProperty.SelectedThickness,
-    scaleFactor: number = BoxProperty.ScaleFactor
+    scaleFactor: number = BoxProperty.ScaleFactor,
+    calibration_ratio: [number, number] = [0, 0]
   ) {
     this.renderCallBack = renderCallBack;
     this.onFinishCreation = onFinishCreation;
@@ -99,6 +101,7 @@ export default class Box {
     this.alpha = alpha;
     this.creatingAnchorX = "xmin";
     this.creatingAnchorY = "ymin";
+    this.calibration_ratio = calibration_ratio;
   }
 
   toJSON() {
@@ -249,41 +252,6 @@ export default class Box {
     ctx.stroke();
     ctx.closePath();
 
-    // Render the label and background
-    // if (this.label !== null && this.label.trim() !== "") {
-    //   if (this.isSelected) {
-    //     ctx.font = BoxProperty.FrontSelected;
-    //   } else {
-    //     ctx.font = BoxProperty.FontNormal;
-    //   }
-    //   const labelWidth = ctx.measureText(this.label).width + 10;
-    //   const labelHeight = 20;
-    //   let labelX = this.xmin;
-    //   let labelY = this.ymin - labelHeight;
-    //   ctx.fillStyle = "white";
-    //   [labelX, labelY] = this.toCanvasCoordinates(labelX, labelY);
-    //   ctx.fillRect(
-    //     labelX / this.scaleFactor,
-    //     labelY / this.scaleFactor,
-    //     labelWidth / this.scaleFactor,
-    //     labelHeight / this.scaleFactor
-    //   );
-    //   ctx.lineWidth = 1;
-    //   ctx.strokeStyle = "black";
-    //   ctx.strokeRect(
-    //     labelX / this.scaleFactor,
-    //     labelY / this.scaleFactor,
-    //     labelWidth / this.scaleFactor,
-    //     labelHeight / this.scaleFactor
-    //   );
-    //   ctx.fillStyle = "black";
-    //   ctx.fillText(
-    //     this.label,
-    //     labelX / this.scaleFactor + 5,
-    //     labelY / this.scaleFactor + 15
-    //   );
-    // }
-
     // Render the handles
     ctx.fillStyle = setAlpha(this.color, 1);
     for (const handle of this.resizeHandles) {
@@ -293,6 +261,39 @@ export default class Box {
         ymin / this.scaleFactor,
         (handle.xmax - handle.xmin) / this.scaleFactor,
         (handle.ymax - handle.ymin) / this.scaleFactor
+      );
+    }
+
+    // Panel to show the real width and height of the box
+    if (this.isCreating) {
+      const realWidth =
+        (this.getWidth() / this.scaleFactor) * this.calibration_ratio[0];
+      const realHeight =
+        (this.getHeight() / this.scaleFactor) * this.calibration_ratio[1];
+
+      const panelX = (this.xmin + this.getWidth() + 5) / this.scaleFactor;
+      const panelY = (this.ymin + this.getHeight() + 5) / this.scaleFactor;
+
+      const panelWidth = 120 / this.scaleFactor;
+      const panelHeight = 50 / this.scaleFactor;
+
+      ctx.fillStyle = "white";
+      ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+      // Write the real width and height on the panel
+      ctx.fillStyle = "black";
+
+      const fontSize = parseInt((15.0 / this.scaleFactor).toString());
+      ctx.font = `${fontSize}px Arial`;
+      ctx.fillText(
+        `Width: ${realWidth.toFixed(2)}`,
+        panelX + 5 / this.scaleFactor,
+        panelY + 20 / this.scaleFactor
+      );
+      ctx.fillText(
+        `Height: ${realHeight.toFixed(2)}`,
+        panelX + 5 / this.scaleFactor,
+        panelY + 40 / this.scaleFactor
       );
     }
   }
