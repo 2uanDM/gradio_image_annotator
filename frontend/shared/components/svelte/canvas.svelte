@@ -39,7 +39,7 @@ export let boxMinSize: number = BoxProperty.MinSize;
 export let handleSize: number;
 export let boxThickness: number;
 export let boxSelectedThickness: number;
-export let choices: string[] = [];
+export let choices: [string, string | number][] = [];
 export let choicesColors: string[] = [];
 export let disableEditBoxes: boolean = false;
 export let handlesCursor: boolean = true;

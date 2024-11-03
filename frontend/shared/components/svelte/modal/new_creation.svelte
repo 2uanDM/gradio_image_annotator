@@ -6,19 +6,25 @@
     import { BaseDropdown } from "../../../patched_dropdown/Index.svelte";
 
     export let label = "";
-    export let currentLabel = "";
-    export let choices: string[] = []; // [(label, i)]
+    export let choices: [string, string | number][] = [];
     export let choicesColors: string[] = [];
     export let color = "";
 
-    let newLabel: string = "";
-    let currentColor: string = "";
+    let currentLabel: string = choices.length > 0 ? choices[0][0] : "";
+    let currentColor: string = choicesColors.length > 0 ? choicesColors[0] : "";
 
     const dispatch = createEventDispatcher<{
         change: object;
     }>();
 
     function dispatchChange(ret: number) {
+        // if currentLabel is not in choices, then it is a new label
+        if (choices.filter((c) => c[0] === currentLabel).length === 0) {
+            choices.push([currentLabel, currentLabel]);
+            choicesColors.push(currentColor);
+        }
+
+
         dispatch("change", {
             label: currentLabel,
             color: currentColor,
@@ -29,17 +35,11 @@
     function onDropDownChange(event) {
         const { detail } = event;
         let choice = detail;
+        
+        currentLabel = choice;
+        currentColor = choicesColors[choices.findIndex((c) => c[0] === choice)];
 
-        if (Number.isInteger(choice)) {
-            if (Array.isArray(choicesColors) && choice < choicesColors.length) {
-                currentColor = choicesColors[choice];
-            }
-            if (Array.isArray(choices) && choice < choices.length) {
-                currentLabel = choices[choice][0];
-            }
-        } else {
-            currentLabel = choice;
-        }
+        console.log(currentLabel, currentColor);
     }
 
     function onColorChange(event) {
@@ -75,7 +75,7 @@
         <span class="modal-content">
             <div>
                 <BaseTextbox
-                    bind:value={newLabel}
+                    bind:value={currentLabel}
                     label="New Label"
                     max_lines={1}
                     root=""
@@ -83,7 +83,7 @@
             </div>
             <div style="margin-right: 40px; margin-bottom: 8px;">
                 <BaseColorPicker
-                    value={currentColor}
+                    bind:value={currentColor}
                     label="Color"
                     show_label={false}
                     on:change={onColorChange}
@@ -94,7 +94,7 @@
             <p style="margin-left: 0.3rem;">Or choose from exists</p>
             <div style="margin-right: 10px; margin-bottom: 2rem;">
                 <BaseDropdown
-                    value={currentLabel}
+                    bind:value={currentLabel}
                     label="Label"
                     {choices}
                     show_label={false}
