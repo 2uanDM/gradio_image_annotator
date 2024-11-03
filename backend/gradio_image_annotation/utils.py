@@ -5,4 +5,5 @@ def prepare_annotate_data(image_data: dict):
     return {
         "image": image_data.get("file_path", ""),
         "boxes": image_data.get("annotations", []),
+        "calibration_ratio": image_data.get("calibration_ratio", [0, 0]),
     }

@@ -1,3 +1,3 @@
-from .image_annotator import ImageAnnotator
+from .image_annotator import AnnotatedImageData, ImageAnnotator
 
-__all__ = ["ImageAnnotator"]
+__all__ = ["ImageAnnotator", "AnnotatedImageData"]

@@ -36,7 +36,7 @@ def _handle_folder_selection(list_files: List[str] | None):
             base_name = os.path.basename(file_path)
             current_loaded_images[base_name] = {
                 "file_path": file_path,
-                "calibration": [0, 0],  # [width, height]
+                "calibration_ratio": [0, 0],  # [width, height]
                 "annotations": [],
             }
 
@@ -105,10 +105,15 @@ def handleReloadButtonClick(dropdown):
     return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
 
 
-def update_calibration_data(annotator):
-    print("🚀 Update calibration data")
-    print(f"==>> annotator: {annotator}")
-    global current_loaded_images
+def update_calibration_data(image_name: str, annotator: dict):
+    print(
+        f"🚀 Update calibration data of image {image_name} from {current_loaded_images[image_name].get('calibration_ratio')}"
+        f"to {annotator['calibration_ratio']}"
+    )
+
+    current_loaded_images[image_name]["calibration_ratio"] = annotator[
+        "calibration_ratio"
+    ]
 
 
 with gr.Blocks(
@@ -228,7 +233,9 @@ with gr.Blocks(
                 outputs=[annotator],
             )
 
-            annotator.calibrated(fn=update_calibration_data, inputs=[annotator])
+            annotator.calibrated(
+                fn=update_calibration_data, inputs=[dropdown, annotator]
+            )
 
 
 if __name__ == "__main__":

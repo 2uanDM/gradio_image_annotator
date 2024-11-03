@@ -302,11 +302,11 @@ function onCalibrationModalChange(event) {
     console.log(event);
 
     if (event.detail.ret == 1) {
-        calibration_ratio = [
+        // 1 pixel in the current canvas is equal to how many milimeters in the real world
+        value.calibration_ratio = [
             event.detail.calibration_ratio[0] / lastBox.getWidth(),
             event.detail.calibration_ratio[1] / lastBox.getHeight()
-        ]; // 1 pixel in the current canvas is equal to how many milimeters in the real world
-        value.calibration_ratio = calibration_ratio;
+        ];
         // console.log("Calibration ratio", calibration_ratio);
         dispatch("calibrated", calibration_ratio);
     }
@@ -704,7 +704,7 @@ onDestroy(() => {
                 Current scale factor: <b>{scaleFactor.toFixed(2)}</b>
             </div>
             <div class="panel">
-                Calibration ratio: <b>{calibration_ratio[0].toFixed(4)} x {calibration_ratio[1].toFixed(4)} (mm)</b> per pixel
+                Calibration ratio: <b>{value.calibration_ratio[0].toFixed(4)} x {value.calibration_ratio[1].toFixed(4)} (mm)</b> per pixel
             </div>
         </div>
 
@@ -717,7 +717,7 @@ onDestroy(() => {
 
 {#if interactive}
 <span class="canvas-control">
-    {#if (calibration_ratio[0] === 0 && calibration_ratio[1] === 0)}
+    {#if (value.calibration_ratio[0] === 0 && value.calibration_ratio[1] === 0)}
     <p style="font-weight: bold; color: red">Please calibrate first => </p>
     {/if}
 
@@ -729,7 +729,7 @@ onDestroy(() => {
         on:click={() => setCalibrateMode()}><Calibrate /></button
         >
 
-        {#if (calibration_ratio[0] !== 0 && calibration_ratio[1] !== 0)}
+        {#if (value.calibration_ratio[0] !== 0 && value.calibration_ratio[1] !== 0)}
         <button
             class="icon"
             class:selected={mode === Mode.Creation}
