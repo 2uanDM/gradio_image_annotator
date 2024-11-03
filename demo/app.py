@@ -40,7 +40,7 @@ def _handle_folder_selection(list_files: List[str] | None):
                 "annotations": [],
             }
 
-    print(f"🚀 Current loaded image: {current_loaded_images}")
+    # print(f"🚀 Current loaded image: {current_loaded_images}")
 
     file_names = list(current_loaded_images.keys())
 
@@ -114,6 +114,10 @@ def update_calibration_data(image_name: str, annotator: dict):
     current_loaded_images[image_name]["calibration_ratio"] = annotator[
         "calibration_ratio"
     ]
+
+
+def update_new_boxes_data(annotator: dict):
+    print(f"🚀 Update new boxes data: {annotator['boxes']}")
 
 
 with gr.Blocks(
@@ -194,18 +198,11 @@ with gr.Blocks(
                     variant="primary",
                 )
 
-            # Register event handler for folder selection
-
+            # Setting event
             folder_of_images_btn.upload(
                 _handle_folder_selection,
                 inputs=[folder_of_images_btn],
                 outputs=[dropdown, annotator],
-            )
-
-            get_coor_btn.click(
-                get_boxes_json,
-                annotator,
-                json_boxes,
             )
 
             show_hide_setting_btn.click(
@@ -214,7 +211,7 @@ with gr.Blocks(
                 outputs=[setting_col, show_hide_setting_btn, setting_state],
             )
 
-            # Navigation:
+            # Navigation
             prev_button.click(
                 fn=handlePrevButtonClick,
                 inputs=[dropdown],
@@ -233,8 +230,17 @@ with gr.Blocks(
                 outputs=[annotator],
             )
 
+            # Annotator event
             annotator.calibrated(
                 fn=update_calibration_data, inputs=[dropdown, annotator]
+            )
+
+            annotator.change(fn=update_calibration_data, inputs=[annotator])
+
+            get_coor_btn.click(
+                get_boxes_json,
+                annotator,
+                json_boxes,
             )
 
 

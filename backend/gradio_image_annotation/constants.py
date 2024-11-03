@@ -29,22 +29,6 @@ CSS = """
 
 EXAMPLE_DATA = {
     "image": "https://gradio-builds.s3.amazonaws.com/demo-files/base.png",
-    "boxes": [
-        {
-            "xmin": 636,
-            "ymin": 575,
-            "xmax": 801,
-            "ymax": 697,
-            "label": "Vehicle",
-            "color": (255, 0, 0),
-        },
-        {
-            "xmin": 360,
-            "ymin": 615,
-            "xmax": 386,
-            "ymax": 702,
-            "label": "Person",
-            "color": (0, 255, 0),
-        },
-    ],
+    "boxes": [],
+    "calibration_ratio": [0, 0],
 }

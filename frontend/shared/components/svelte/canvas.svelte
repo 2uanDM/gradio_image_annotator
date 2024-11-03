@@ -183,7 +183,7 @@ function handlePointerDown(event: PointerEvent) {
 }
 
 function handlePointerUp(event: PointerEvent) {
-    dispatch("change");
+    // dispatch("change");
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -312,7 +312,6 @@ function onCalibrationModalChange(event) {
     }
 
     draw(); // Update the UI
-    dispatch("change");
 }
 
 function createBox(event: PointerEvent) {
@@ -363,7 +362,6 @@ function createBox(event: PointerEvent) {
 
     selectBox(0);
     draw(); // Box is render from here
-    dispatch("change");
 }
 
 function setCalibrateMode() {

@@ -46,7 +46,7 @@
     export let handlesCursor: boolean;
 
     export let gradio: Gradio<{
-        change: never;
+        change: undefined;
         error: string;
         edit: never;
         drag: never;
