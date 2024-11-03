@@ -37,7 +37,7 @@ def _handle_folder_selection(list_files: List[str] | None):
             current_loaded_images[base_name] = {
                 "file_path": file_path,
                 "calibration_ratio": [0, 0],  # [width, height]
-                "annotations": [],
+                "boxes": [],
             }
 
     # print(f"🚀 Current loaded image: {current_loaded_images}")
@@ -105,7 +105,14 @@ def handleReloadButtonClick(dropdown):
     return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
 
 
+def handleSelect(dropdown):
+    print(f"==>> dropdown: {dropdown}")
+    return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
+
+
 def update_calibration_data(image_name: str, annotator: dict):
+    if image_name is None:
+        return
     print(
         f"🚀 Update calibration data of image {image_name} from {current_loaded_images[image_name].get('calibration_ratio')}"
         f"to {annotator['calibration_ratio']}"
@@ -116,8 +123,14 @@ def update_calibration_data(image_name: str, annotator: dict):
     ]
 
 
-def update_new_boxes_data(annotator: dict):
-    print(f"🚀 Update new boxes data: {annotator['boxes']}")
+def update_new_boxes_data(image_name: str, annotator: dict):
+    if image_name is None or image_name not in current_loaded_images:
+        return
+
+    # print(f"🚀 Update new boxes data: {annotator['boxes']}")
+    current_loaded_images.get(image_name, {})["boxes"] = annotator["boxes"]
+
+    print(f"🚀 Current data: {current_loaded_images[image_name]}")
 
 
 with gr.Blocks(
@@ -158,15 +171,18 @@ with gr.Blocks(
         with gr.Column(scale=70, variant="panel") as annotatate_col:
             gr.Markdown("#### Step 2: Annotate the image")
 
-            annotator = ImageAnnotator(
-                value=prepare_annotate_data(current_loaded_images[dropdown.value])
-                if current_loaded_images
-                else EXAMPLE_DATA,
-                boxes_alpha=0,
-                label_list=["Person", "Vehicle"],
-                label_colors=[(0, 255, 0), (255, 0, 0)],
-                box_thickness=0.1,
-            )
+            if current_loaded_images:
+                annotator = ImageAnnotator(
+                    value=prepare_annotate_data(current_loaded_images[dropdown.value]),
+                    boxes_alpha=0,
+                    box_thickness=0.1,
+                )
+            else:
+                annotator = ImageAnnotator(
+                    value=EXAMPLE_DATA,
+                    boxes_alpha=0,
+                    box_thickness=0.1,
+                )
 
             with gr.Row(variant="panel"):
                 prev_button = gr.Button(
@@ -230,12 +246,18 @@ with gr.Blocks(
                 outputs=[annotator],
             )
 
+            dropdown.change(
+                fn=handleSelect,
+                inputs=[dropdown],
+                outputs=[annotator],
+            )
+
             # Annotator event
             annotator.calibrated(
                 fn=update_calibration_data, inputs=[dropdown, annotator]
             )
 
-            annotator.change(fn=update_calibration_data, inputs=[annotator])
+            annotator.change(fn=update_new_boxes_data, inputs=[dropdown, annotator])
 
             get_coor_btn.click(
                 get_boxes_json,

@@ -25,7 +25,7 @@ import {
   Mode
 } from './../../utils/enums';
 import CalibrationModalbox from "./modal/calibration.svelte";
-import CreationModalBox from "./modal/creation.svelte";
+import CreationModalBox from "./modal/new_creation.svelte";
 
 export let value: AnnotatedImageData | null;
 export let imageUrl: string | null = null;
@@ -269,7 +269,7 @@ function calibrateBox(event: PointerEvent) {
 
     selectBox(0);
     // draw(); // Box is render from here
-    dispatch("change");
+    // dispatch("change");
 }
 
 function onFinishCalibration() {
@@ -766,7 +766,6 @@ onDestroy(() => {
                         on:change={onModalNewChange}
                         on:enter{onModalNewChange}
                         {choices}
-                        showRemove={false}
                         {choicesColors}
                         label={selectedBox >= 0 &&
                         selectedBox < value.boxes.length

@@ -250,39 +250,39 @@ export default class Box {
     ctx.closePath();
 
     // Render the label and background
-    if (this.label !== null && this.label.trim() !== "") {
-      if (this.isSelected) {
-        ctx.font = BoxProperty.FrontSelected;
-      } else {
-        ctx.font = BoxProperty.FontNormal;
-      }
-      const labelWidth = ctx.measureText(this.label).width + 10;
-      const labelHeight = 20;
-      let labelX = this.xmin;
-      let labelY = this.ymin - labelHeight;
-      ctx.fillStyle = "white";
-      [labelX, labelY] = this.toCanvasCoordinates(labelX, labelY);
-      ctx.fillRect(
-        labelX / this.scaleFactor,
-        labelY / this.scaleFactor,
-        labelWidth / this.scaleFactor,
-        labelHeight / this.scaleFactor
-      );
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = "black";
-      ctx.strokeRect(
-        labelX / this.scaleFactor,
-        labelY / this.scaleFactor,
-        labelWidth / this.scaleFactor,
-        labelHeight / this.scaleFactor
-      );
-      ctx.fillStyle = "black";
-      ctx.fillText(
-        this.label,
-        labelX / this.scaleFactor + 5,
-        labelY / this.scaleFactor + 15
-      );
-    }
+    // if (this.label !== null && this.label.trim() !== "") {
+    //   if (this.isSelected) {
+    //     ctx.font = BoxProperty.FrontSelected;
+    //   } else {
+    //     ctx.font = BoxProperty.FontNormal;
+    //   }
+    //   const labelWidth = ctx.measureText(this.label).width + 10;
+    //   const labelHeight = 20;
+    //   let labelX = this.xmin;
+    //   let labelY = this.ymin - labelHeight;
+    //   ctx.fillStyle = "white";
+    //   [labelX, labelY] = this.toCanvasCoordinates(labelX, labelY);
+    //   ctx.fillRect(
+    //     labelX / this.scaleFactor,
+    //     labelY / this.scaleFactor,
+    //     labelWidth / this.scaleFactor,
+    //     labelHeight / this.scaleFactor
+    //   );
+    //   ctx.lineWidth = 1;
+    //   ctx.strokeStyle = "black";
+    //   ctx.strokeRect(
+    //     labelX / this.scaleFactor,
+    //     labelY / this.scaleFactor,
+    //     labelWidth / this.scaleFactor,
+    //     labelHeight / this.scaleFactor
+    //   );
+    //   ctx.fillStyle = "black";
+    //   ctx.fillText(
+    //     this.label,
+    //     labelX / this.scaleFactor + 5,
+    //     labelY / this.scaleFactor + 15
+    //   );
+    // }
 
     // Render the handles
     ctx.fillStyle = setAlpha(this.color, 1);
