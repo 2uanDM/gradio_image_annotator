@@ -1,16 +1,16 @@
 <script context="module" lang="ts">
+	export { default as BaseExample } from "./Example.svelte";
 	export { default as BaseDropdown } from "./shared/Dropdown.svelte";
 	export { default as BaseMultiselect } from "./shared/Multiselect.svelte";
-	export { default as BaseExample } from "./Example.svelte";
 </script>
 
 <script lang="ts">
-	import type { Gradio, KeyUpData, SelectData } from "@gradio/utils";
-	import Multiselect from "./shared/Multiselect.svelte";
-	import Dropdown from "./shared/Dropdown.svelte";
 	import { Block } from "@gradio/atoms";
-	import { StatusTracker } from "@gradio/statustracker";
 	import type { LoadingStatus } from "@gradio/statustracker";
+	import { StatusTracker } from "@gradio/statustracker";
+	import type { Gradio, KeyUpData, SelectData } from "@gradio/utils";
+	import Dropdown from "./shared/Dropdown.svelte";
+	import Multiselect from "./shared/Multiselect.svelte";
 
 	export let label = "Dropdown";
 	export let info: string | undefined = undefined;

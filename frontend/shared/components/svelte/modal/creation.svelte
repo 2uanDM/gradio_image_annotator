@@ -1,9 +1,8 @@
 <script lang="ts">
-    import { BaseColorPicker } from "@gradio/colorpicker";
     import { BaseButton } from "@gradio/button";
-    import { BaseDropdown } from "../../patched_dropdown/Index.svelte";
-    import { createEventDispatcher } from "svelte";
-    import { onMount, onDestroy } from "svelte";
+    import { BaseColorPicker } from "@gradio/colorpicker";
+    import { createEventDispatcher, onDestroy, onMount } from "svelte";
+    import { BaseDropdown } from "../../../patched_dropdown/Index.svelte";
 
     export let label = "";
     export let currentLabel = "";

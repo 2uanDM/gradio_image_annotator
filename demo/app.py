@@ -2,69 +2,27 @@ import os
 from typing import List
 
 import gradio as gr
-from gradio_image_annotation import image_annotator
+from gradio_image_annotation import ImageAnnotator
+from gradio_image_annotation.constants import CSS, EXAMPLE_DATA, JS_SCRIPT
+from gradio_image_annotation.utils import prepare_annotate_data
 
 ## GLOBALS VARIABLES ##
 current_loaded_images = {}
 calibration_options = {}
-
-JS_LIGHT_THEME = """
-function refresh() {
-    const url = new URL(window.location);
-
-    if (url.searchParams.get('__theme') !== 'light') {
-        url.searchParams.set('__theme', 'light');
-        window.location.href = url.href;
-    }
-}
-"""
-
-CSS = """
-#gradio-upload-button {
-    height: 2.5rem !important;
-    border-radius: 0.5rem !important;
-    margin-top: 1rem !important;
-}
-"""
-
-
-example_annotation = {
-    "image": "https://gradio-builds.s3.amazonaws.com/demo-files/base.png",
-    "boxes": [
-        {
-            "xmin": 636,
-            "ymin": 575,
-            "xmax": 801,
-            "ymax": 697,
-            "label": "Vehicle",
-            "color": (255, 0, 0),
-        },
-        {
-            "xmin": 360,
-            "ymin": 615,
-            "xmax": 386,
-            "ymax": 702,
-            "label": "Person",
-            "color": (0, 255, 0),
-        },
-    ],
-}
-
-
-def crop(annotations):
-    if annotations["boxes"]:
-        box = annotations["boxes"][0]
-        return annotations["image"][
-            box["ymin"] : box["ymax"], box["xmin"] : box["xmax"]
-        ]
-    return None
 
 
 def get_boxes_json(annotations):
     return annotations["boxes"]
 
 
-def handle_folder_selection(list_files: List[str] | None):
+def _show_hide_setting_tab(setting_state):
+    status = not setting_state
+    btn_label = "Show Setting" if setting_state else "Hide Setting"
+
+    return gr.update(visible=status), btn_label, status
+
+
+def _handle_folder_selection(list_files: List[str] | None):
     global current_loaded_images
 
     if list_files is None:
@@ -76,25 +34,122 @@ def handle_folder_selection(list_files: List[str] | None):
     for file_path in list_files:
         if file_path.endswith(".png") or file_path.endswith(".jpg"):
             base_name = os.path.basename(file_path)
-            current_loaded_images[base_name] = file_path
+            current_loaded_images[base_name] = {
+                "file_path": file_path,
+                "calibration_ratio": [0, 0],  # [width, height]
+                "boxes": [],
+            }
+
+    # print(f"🚀 Current loaded image: {current_loaded_images}")
 
     file_names = list(current_loaded_images.keys())
 
-    return gr.update(choices=file_names, value=file_names[0])
+    return gr.update(choices=file_names, value=file_names[0]), gr.update(
+        value=prepare_annotate_data(
+            current_loaded_images[file_names[0]],
+        )
+    )
+
+
+def handlePrevButtonClick(dropdown):
+    if dropdown is None:
+        gr.Info("Please select an folder first")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(EXAMPLE_DATA)
+        ) if current_loaded_images else EXAMPLE_DATA
+
+    list_keys = list(current_loaded_images.keys())
+
+    index = list_keys.index(dropdown)
+
+    if index == 0:
+        gr.Info("You are at the first image")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index]])
+        )
+    else:
+        dropdown = list_keys[index - 1]
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index - 1]])
+        )
+
+
+def handleNextButtonClick(dropdown):
+    if dropdown is None:
+        gr.Info("Please select an folder first")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(EXAMPLE_DATA)
+        ) if current_loaded_images else EXAMPLE_DATA
+
+    list_keys = list(current_loaded_images.keys())
+
+    index = list_keys.index(dropdown)
+
+    if index == len(list_keys) - 1:
+        gr.Info("You are at the last image")
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index]])
+        )
+    else:
+        dropdown = list_keys[index + 1]
+        return dropdown, gr.update(
+            value=prepare_annotate_data(current_loaded_images[list_keys[index + 1]])
+        )
+
+
+def handleReloadButtonClick(dropdown):
+    if dropdown is None:
+        gr.Info("Please select an folder first")
+        return gr.update(value=prepare_annotate_data(EXAMPLE_DATA))
+
+    return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
+
+
+def handleSelect(dropdown):
+    print(f"==>> dropdown: {dropdown}")
+    return gr.update(value=prepare_annotate_data(current_loaded_images[dropdown]))
+
+
+def update_calibration_data(image_name: str, annotator: dict):
+    if image_name is None:
+        return
+    print(
+        f"🚀 Update calibration data of image {image_name} from {current_loaded_images[image_name].get('calibration_ratio')}"
+        f"to {annotator['calibration_ratio']}"
+    )
+
+    current_loaded_images[image_name]["calibration_ratio"] = annotator[
+        "calibration_ratio"
+    ]
+
+
+def update_new_boxes_data(image_name: str, annotator: dict):
+    if image_name is None or image_name not in current_loaded_images:
+        return
+
+    # print(f"🚀 Update new boxes data: {annotator['boxes']}")
+    current_loaded_images.get(image_name, {})["boxes"] = annotator["boxes"]
+
+    print(f"🚀 Current data: {current_loaded_images[image_name]}")
 
 
 with gr.Blocks(
-    js=JS_LIGHT_THEME,
+    js=JS_SCRIPT,
     theme=gr.themes.Soft(primary_hue="slate"),
     css=CSS,
+    fill_height=True,
+    fill_width=True,
 ) as demo:
     gr.Markdown("# Image Annotation")
+    gr.Markdown(
+        "**Note**: Zoom by `Ctrl + Mouse Wheel` is locked, please do that with `Ctrl + =` or `Ctrl + -`"
+    )
     gr.Markdown("---")
 
-    gr.Markdown("#### Step 1: Upload an image")
-
     with gr.Row(equal_height=True) as row:
-        with gr.Column(scale=30, variant="panel") as row:
+        setting_state = gr.State(value=True)
+        with gr.Column(scale=30, variant="panel", visible=setting_state) as setting_col:
+            gr.Markdown("#### Step 1: Upload an image")
             dropdown = gr.Dropdown(
                 label="Choose an image",
                 allow_custom_value=True,
@@ -108,25 +163,108 @@ with gr.Blocks(
                 file_count="directory",
             )
 
-        with gr.Column(scale=70, variant="panel") as row:
-            gr.Markdown("#### Step 2: Annotate the image")
-
-            annotator = image_annotator(
-                example_annotation,
-                label_list=["Person", "Vehicle"],
-                label_colors=[(0, 255, 0), (255, 0, 0)],
-            )
-
-            button_get = gr.Button("Get bounding boxes")
+            gr.Markdown("---")
+            gr.Markdown("#### Output JSON")
 
             json_boxes = gr.JSON()
-            button_get.click(get_boxes_json, annotator, json_boxes)
 
-            # Register event handler for folder selection
+        with gr.Column(scale=70, variant="panel") as annotatate_col:
+            gr.Markdown("#### Step 2: Annotate the image")
+
+            if current_loaded_images:
+                annotator = ImageAnnotator(
+                    value=prepare_annotate_data(current_loaded_images[dropdown.value]),
+                    label_list=["car", "truck", "motorbike"],
+                    label_colors=[(255, 0, 0), (0, 255, 0), (0, 0, 255)],
+                    boxes_alpha=0,
+                    box_thickness=0.1,
+                )
+            else:
+                annotator = ImageAnnotator(
+                    value=EXAMPLE_DATA,
+                    boxes_alpha=0,
+                    box_thickness=0.1,
+                )
+
+            with gr.Row(variant="panel"):
+                prev_button = gr.Button(
+                    value="< Prev",
+                    variant="primary",
+                    scale=20,
+                )
+
+                reload_image = gr.Button(
+                    value="Reload image",
+                    variant="stop",
+                    scale=60,
+                )
+
+                next_button = gr.Button(
+                    value="Next >",
+                    variant="primary",
+                    scale=20,
+                )
+
+            with gr.Row(variant="panel"):
+                show_hide_setting_btn = gr.Button(
+                    value="Show Setting" if not setting_state else "Hide Setting",
+                    variant="stop",
+                )
+
+                get_coor_btn = gr.Button(
+                    "Get bounding boxes",
+                    variant="primary",
+                )
+
+            # Setting event
             folder_of_images_btn.upload(
-                handle_folder_selection,
+                _handle_folder_selection,
                 inputs=[folder_of_images_btn],
-                outputs=[dropdown],
+                outputs=[dropdown, annotator],
+            )
+
+            show_hide_setting_btn.click(
+                fn=_show_hide_setting_tab,
+                inputs=[setting_state],
+                outputs=[setting_col, show_hide_setting_btn, setting_state],
+            )
+
+            # Navigation
+            prev_button.click(
+                fn=handlePrevButtonClick,
+                inputs=[dropdown],
+                outputs=[dropdown, annotator],
+            )
+
+            next_button.click(
+                fn=handleNextButtonClick,
+                inputs=[dropdown],
+                outputs=[dropdown, annotator],
+            )
+
+            reload_image.click(
+                fn=handleReloadButtonClick,
+                inputs=[dropdown],
+                outputs=[annotator],
+            )
+
+            dropdown.change(
+                fn=handleSelect,
+                inputs=[dropdown],
+                outputs=[annotator],
+            )
+
+            # Annotator event
+            annotator.calibrated(
+                fn=update_calibration_data, inputs=[dropdown, annotator]
+            )
+
+            annotator.change(fn=update_new_boxes_data, inputs=[dropdown, annotator])
+
+            get_coor_btn.click(
+                get_boxes_json,
+                annotator,
+                json_boxes,
             )
 
 
