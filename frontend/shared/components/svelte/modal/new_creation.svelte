@@ -4,6 +4,7 @@
     import { BaseTextbox } from "@gradio/textbox";
     import { createEventDispatcher, onDestroy, onMount } from "svelte";
     import { BaseDropdown } from "../../../patched_dropdown/Index.svelte";
+    import { DefaultColor } from "../../../utils/constants";
 
     export let label = "";
     export let choices: [string, string | number][] = [];
@@ -19,9 +20,11 @@
 
     function dispatchChange(ret: number) {
         // if currentLabel is not in choices, then it is a new label
-        if (choices.filter((c) => c[0] === currentLabel).length === 0) {
-            choices.push([currentLabel, currentLabel]);
-            choicesColors.push(currentColor);
+        if (currentLabel !== "") {
+            if (choices.filter((c) => c[0] === currentLabel).length === 0) {
+                choices.push([currentLabel, currentLabel]);
+                choicesColors.push(currentColor);
+            }
         }
 
 
@@ -37,7 +40,12 @@
         let choice = detail;
         
         currentLabel = choice;
-        currentColor = choicesColors[choices.findIndex((c) => c[0] === choice)];
+        const currentColorIndex = choices.findIndex((c) => c[0] === choice); 
+        if (currentColorIndex === -1) {
+            currentColor = DefaultColor;
+        } else {
+            currentColor = choicesColors[currentColorIndex];
+        }
 
         console.log(currentLabel, currentColor);
     }

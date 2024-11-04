@@ -73,6 +73,8 @@ let showPanel = false; // Information panel
 let mouseX = 0;
 let mouseY = 0;
 
+let zoomScale = 1.0;
+
 const dispatch = createEventDispatcher < {
     change: undefined;
     calibrated: [number, number];
@@ -258,6 +260,7 @@ function calibrateBox(event: PointerEvent) {
         boxThickness,
         boxSelectedThickness,
         scaleFactor,
+        value.calibration_ratio
     );
 
     box.startCreating(event, rect.left, rect.top);
@@ -304,8 +307,8 @@ function onCalibrationModalChange(event) {
     if (event.detail.ret == 1) {
         // 1 pixel in the current canvas is equal to how many milimeters in the real world
         value.calibration_ratio = [
-            event.detail.calibration_ratio[0] / lastBox.getWidth(),
-            event.detail.calibration_ratio[1] / lastBox.getHeight()
+            event.detail.calibration_ratio[0] / lastBox.getWidth() * scaleFactor,
+            event.detail.calibration_ratio[1] / lastBox.getHeight() * scaleFactor
         ];
         // console.log("Calibration ratio", calibration_ratio);
         dispatch("calibrated", calibration_ratio);
@@ -350,6 +353,7 @@ function createBox(event: PointerEvent) {
         boxThickness,
         boxSelectedThickness,
         scaleFactor,
+        value.calibration_ratio
     );
 
     // If the box is too small, don't create it
@@ -499,6 +503,8 @@ function parseInputBoxes() {
     if (value === null) {
         return;
     }
+
+    let calibration_ratio = value.calibration_ratio;
 
     for (let i = 0; i < value.boxes.length; i++) {
         let box = value.boxes[i];
@@ -705,7 +711,6 @@ onDestroy(() => {
                 Calibration ratio: <b>{value.calibration_ratio[0].toFixed(4)} x {value.calibration_ratio[1].toFixed(4)} (mm)</b> per pixel
             </div>
         </div>
-
     </div>
     <div><div class="panel">
         Mode: <b style="color: red">{mode === 0 ? "Creation" : mode === 1 ? "Drag" : "Calibrate"}</b>
