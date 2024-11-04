@@ -1,14 +1,25 @@
+import json
 import os
 from typing import List
 
 import gradio as gr
 from gradio_image_annotation import ImageAnnotator
 from gradio_image_annotation.constants import CSS, EXAMPLE_DATA, JS_SCRIPT
-from gradio_image_annotation.utils import prepare_annotate_data
+from gradio_image_annotation.utils import (
+    format_boxes_output,
+    format_template_matching_output,
+    prepare_annotate_data,
+    template_matching,
+)
 
 ## GLOBALS VARIABLES ##
 current_loaded_images = {}
 calibration_options = {}
+TEMPLATES_DIR = "templates"
+RESULTS_DIR = "results"
+
+os.makedirs(TEMPLATES_DIR, exist_ok=True)
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
 def get_boxes_json(annotations):
@@ -64,8 +75,11 @@ def handlePrevButtonClick(dropdown):
 
     if index == 0:
         gr.Info("You are at the first image")
+
+        print("Current loaded images: ", current_loaded_images)
+
         return dropdown, gr.update(
-            value=prepare_annotate_data(current_loaded_images[list_keys[index]])
+            value=prepare_annotate_data(current_loaded_images[dropdown])
         )
     else:
         dropdown = list_keys[index - 1]
@@ -133,6 +147,80 @@ def update_new_boxes_data(image_name: str, annotator: dict):
     print(f"🚀 Current data: {current_loaded_images[image_name]}")
 
 
+def exec_template_matching(
+    dropdown,
+    accuracy_threshold,
+    bounding_rect_overlap_threshold,
+    rotation_angle_step,
+    use_template_checkbox,
+    choose_folder_templates,
+    annotator,
+):
+    # Check if an image is selected
+    if dropdown is None:
+        gr.Info("Please select an image first")
+        return None, None  # Return empty outputs
+
+    # Get the image data from the current_loaded_images dictionary
+    image_data = current_loaded_images.get(dropdown)
+    if image_data is None:
+        gr.Info("Image data not found")
+        return None, None
+
+    # Get the image path and name
+    image_path = image_data["file_path"]
+    current_image_name = dropdown
+
+    rectangles = format_boxes_output(annotator.get("boxes", []))
+
+    if use_template_checkbox:
+        job_type = "file"
+        selected_folders = choose_folder_templates
+    else:
+        job_type = "annotate"
+        selected_folders = []  # Not used when job_type is 'annotate'
+
+    (
+        processed_img_path,
+        processed_img_json_path,
+        processed_img_name,
+        found_labels,
+        rects_found_count,
+    ) = template_matching(
+        job_type=job_type,
+        template_dir=TEMPLATES_DIR,
+        result_dir=RESULTS_DIR,
+        image_path=image_path,
+        rectangles=rectangles,
+        current_image_name=current_image_name.rsplit(".", 1)[0],
+        accuracy_threshold=accuracy_threshold,
+        rect_overlap_threshold=bounding_rect_overlap_threshold,
+        selected_folders=selected_folders,
+        selected_angle=int(rotation_angle_step),
+    )
+
+    print(f"🚀 Found labels: {found_labels}")
+    print(f"🚀 Rectangles found count: {rects_found_count}")
+    print(f"🚀 Processed image path: {processed_img_path}")
+
+    # Load the JSON data for display
+    if os.path.exists(processed_img_json_path):
+        with open(processed_img_json_path, "r", encoding="utf8") as f:
+            json_data = json.load(f)
+    else:
+        json_data = []
+
+    # Convert the output to a format that can be displayed in the UI
+    formatted_json_data = format_template_matching_output(json_data)
+
+    # Update the current image data with the new bounding boxes
+    current_loaded_images[current_image_name]["boxes"] = formatted_json_data
+
+    return gr.update(
+        value=prepare_annotate_data(current_loaded_images[current_image_name])
+    ), gr.update(value=json_data)
+
+
 with gr.Blocks(
     js=JS_SCRIPT,
     theme=gr.themes.Soft(primary_hue="slate"),
@@ -164,9 +252,54 @@ with gr.Blocks(
             )
 
             gr.Markdown("---")
+            gr.Markdown("#### Template Matching Setting")
+
+            with gr.Row(variant="panel"):
+                accuracy_threshold = gr.Slider(
+                    label="Accuracy Threshold",
+                    minimum=0.1,
+                    maximum=1.0,
+                    step=0.01,
+                    value=0.8,
+                    interactive=True,
+                )
+
+                bounding_rect_overlap_threshold = gr.Slider(
+                    label="Bounding Rect Overlap",
+                    minimum=0.1,
+                    maximum=1.0,
+                    step=0.01,
+                    value=0.2,
+                    interactive=True,
+                )
+
+            rotation_angle_step = gr.Dropdown(
+                label="Rotation Angle Step",
+                choices=[0, 30, 45, 90, 180],
+                value=90,
+                interactive=True,
+            )
+
+            gr.Markdown("---")
+
+            with gr.Row(variant="panel"):
+                use_template_checkbox = gr.Checkbox(
+                    label="Use Template Matching",
+                    value=False,
+                    interactive=True,
+                )
+
+                choose_folder_templates = gr.Dropdown(
+                    choices=os.listdir(TEMPLATES_DIR),
+                    label="Choose at least one template",
+                    interactive=False,
+                    multiselect=True,
+                )
+
             gr.Markdown("#### Output JSON")
 
-            json_boxes = gr.JSON()
+            with gr.Accordion():
+                json_boxes = gr.JSON()
 
         with gr.Column(scale=70, variant="panel") as annotatate_col:
             gr.Markdown("#### Step 2: Annotate the image")
@@ -214,6 +347,11 @@ with gr.Blocks(
                     variant="primary",
                 )
 
+                run_template_matching = gr.Button(
+                    "Run Template Matching",
+                    elem_id="run-template-matching",
+                )
+
             # Setting event
             folder_of_images_btn.upload(
                 _handle_folder_selection,
@@ -225,6 +363,14 @@ with gr.Blocks(
                 fn=_show_hide_setting_tab,
                 inputs=[setting_state],
                 outputs=[setting_col, show_hide_setting_btn, setting_state],
+            )
+
+            use_template_checkbox.change(
+                fn=lambda x: gr.update(
+                    interactive=x, choices=os.listdir(TEMPLATES_DIR)
+                ),
+                inputs=[use_template_checkbox],
+                outputs=[choose_folder_templates],
             )
 
             # Navigation
@@ -263,6 +409,21 @@ with gr.Blocks(
                 get_boxes_json,
                 annotator,
                 json_boxes,
+            )
+
+            # Run template matching
+            run_template_matching.click(
+                fn=exec_template_matching,
+                inputs=[
+                    dropdown,
+                    accuracy_threshold,
+                    bounding_rect_overlap_threshold,
+                    rotation_angle_step,
+                    use_template_checkbox,
+                    choose_folder_templates,
+                    annotator,
+                ],
+                outputs=[annotator, json_boxes],
             )
 
 

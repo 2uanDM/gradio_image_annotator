@@ -540,8 +540,6 @@ function parseInputBoxes() {
                 handleSize,
                 boxThickness,
                 boxSelectedThickness,
-                scaleFactor,
-                calibration_ratio
             );
             value.boxes[i] = box;
         }
@@ -716,7 +714,6 @@ onDestroy(() => {
     </div>
     <div><div class="panel">
         Mode: <b style="color: red">{mode === 0 ? "Creation" : mode === 1 ? "Drag" : "Calibrate"}</b>
-        Current box size: <b></b>
     </div></div>
 </div>
 {/if}

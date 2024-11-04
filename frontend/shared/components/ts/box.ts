@@ -265,7 +265,11 @@ export default class Box {
     }
 
     // Panel to show the real width and height of the box
-    if (this.isCreating) {
+    if (
+      this.isCreating &&
+      this.calibration_ratio[0] > 0 &&
+      this.calibration_ratio[1] > 0
+    ) {
       const realWidth =
         (this.getWidth() / this.scaleFactor) * this.calibration_ratio[0];
       const realHeight =
@@ -286,12 +290,12 @@ export default class Box {
       const fontSize = parseInt((15.0 / this.scaleFactor).toString());
       ctx.font = `${fontSize}px Arial`;
       ctx.fillText(
-        `Width: ${realWidth.toFixed(2)}`,
+        `Width: ${realWidth.toFixed(2)} mm`,
         panelX + 5 / this.scaleFactor,
         panelY + 20 / this.scaleFactor
       );
       ctx.fillText(
-        `Height: ${realHeight.toFixed(2)}`,
+        `Height: ${realHeight.toFixed(2)} mm`,
         panelX + 5 / this.scaleFactor,
         panelY + 40 / this.scaleFactor
       );
