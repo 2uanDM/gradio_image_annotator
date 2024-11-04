@@ -9,3 +9,7 @@ __tmp/*
 node_modules
 frontend/node_modules
 .venv
+results/*
+!results/.gitkeep
+templates/*
+!templates/.gitkeep
